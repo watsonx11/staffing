@@ -1,7 +1,11 @@
 <script setup>
+import SectionGenerator from '@/components/SectionGenerator.vue'
+
+const sectionTitle = "Home"
+const sectionSubtitle = ""
 
 </script>
 
 <template>
-    <h1>Home</h1>
+    <SectionGenerator :sectionTitle="sectionTitle" :sectionSubtitle="sectionSubtitle"/>
 </template>
