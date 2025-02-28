@@ -12,6 +12,6 @@ To call buttons, without having to fully define them use the following component
 <ButtonSuccess buttonText="Save" />
 ```
 
-! [Success Button](/markdown_images/normal_success.png)
+![Success Button](/markdown_images/normal_success.png)
 
 ### Danger, Clear, Cancel Button
