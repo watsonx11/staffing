@@ -255,7 +255,7 @@ onMounted(() => {
         <div class="columns">
             <div class="column is-1"></div>
             <div class="column is-2">
-                <label class="label">First Name:</label>
+                <label class="label"><span class="has-text-danger">*</span> First Name:</label>
                 <InputfieldGenerator 
                     placeholder="First Name"
                     :valueText="firstName"
@@ -263,7 +263,7 @@ onMounted(() => {
                 />
             </div>
             <div class="column is-2">
-                <label class="label">Last Name:</label>
+                <label class="label"><span class="has-text-danger">*</span> Last Name:</label>
                 <InputfieldGenerator 
                     placeholder="Last Name"
                     :valueText="lastName"
@@ -279,7 +279,7 @@ onMounted(() => {
                 />
             </div>
             <div class="column is-2">
-                <label class="label">Location:</label>
+                <label class="label"><span class="has-text-danger">*</span> Location:</label>
                 <div class="select is-normal" :class="{ 'is-loading': isLoading }">
                     <select v-model="selectedLocation" @change="handleLocationChange">
                         <option value="" disabled>Select location</option>
