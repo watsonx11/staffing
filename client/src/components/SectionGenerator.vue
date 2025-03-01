@@ -7,7 +7,7 @@ const props = defineProps({
     },
     sectionSubtitle: {
         type: String,
-        default: 'Default Substring'
+        default: ''
     }
 })
 

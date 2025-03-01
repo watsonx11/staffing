@@ -3,7 +3,7 @@
 const props = defineProps({
     buttonText: {
         type: String,
-        default: 'is-success',
+        default: 'is-warning',
     }, 
     extraClass: {
         type: String,
@@ -15,7 +15,7 @@ const props = defineProps({
 
 <template>
     <button 
-        class="button is-success"
+        class="button is-warning"
         :class="extraClass"
     >
         {{ buttonText }}

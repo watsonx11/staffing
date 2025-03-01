@@ -1,0 +1,13 @@
+databaseChangeLog:
+  - changeSet:
+      id: add-notes-column
+      author: sean.watson
+      changes:
+        - addColumn:
+            tableName: personnel
+            columns:
+              - column:
+                  name: notes
+                  type: TEXT
+                  constraints:
+                    nullable: true

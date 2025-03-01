@@ -1,0 +1,101 @@
+databaseChangeLog:
+  - changeSet:
+      id: create-locations-table
+      author: sean.watson
+      changes:
+        - createTable:
+            tableName: locations
+            columns:
+              - column:
+                  name: id
+                  type: SERIAL
+                  constraints:
+                    primaryKey: true
+                    nullable: false
+              - column:
+                  name: name
+                  type: TEXT
+                  constraints:
+                    nullable: false
+              - column:
+                  name: created_at
+                  type: TIMESTAMP WITH TIME ZONE
+                  defaultValueComputed: "NOW()"
+                  constraints:
+                    nullable: false
+
+  - changeSet:
+      id: add-locations-name-index
+      author: sean.watson
+      changes:
+        - createIndex:
+            indexName: idx_locations_name
+            tableName: locations
+            columns:
+              - column:
+                  name: name
+
+  - changeSet:
+      id: insert-locations-data
+      author: sean.watson
+      changes:
+        - insert:
+            tableName: locations
+            columns:
+              - column:
+                  name: name
+                  value: "Pearl Harbor"
+        - insert:
+            tableName: locations
+            columns:
+              - column:
+                  name: name
+                  value: "San Diego"
+        - insert:
+            tableName: locations
+            columns:
+              - column:
+                  name: name
+                  value: "Port Orchard"
+        - insert:
+            tableName: locations
+            columns:
+              - column:
+                  name: name
+                  value: "Cleveland"
+        - insert:
+            tableName: locations
+            columns:
+              - column:
+                  name: name
+                  value: "Las Vegas"
+        - insert:
+            tableName: locations
+            columns:
+              - column:
+                  name: name
+                  value: "Kingsbay"
+        - insert:
+            tableName: locations
+            columns:
+              - column:
+                  name: name
+                  value: "Norfolk"
+        - insert:
+            tableName: locations
+            columns:
+              - column:
+                  name: name
+                  value: "Manassas"
+        - insert:
+            tableName: locations
+            columns:
+              - column:
+                  name: name
+                  value: "Groton"
+        - insert:
+            tableName: locations
+            columns:
+              - column:
+                  name: name
+                  value: "Remote"

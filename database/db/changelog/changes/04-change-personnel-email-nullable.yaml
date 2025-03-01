@@ -1,0 +1,9 @@
+databaseChangeLog:
+  - changeSet:
+      id: make-email-nullable
+      author: sean.watson
+      changes:
+        - dropNotNullConstraint:
+            tableName: personnel
+            columnName: email_address
+            columnDataType: TEXT

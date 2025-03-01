@@ -1,67 +1,282 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import SectionGenerator from '@/components/SectionGenerator.vue'
-import ButtonSuccess from '@/components/buttons/ButtonSuccess.vue';
-import InputfieldGenerator from '@/components/InputfieldGenerator.vue';
-import ReadOnlyInputFeild from '@/components/buttons/input_fields/ReadOnlyInputFeild.vue';
+import InputfieldGenerator from '@/components/InputfieldGenerator.vue'
+import ReadOnlyInputField from '@/components/input_fields/ReadOnlyInputField.vue'
+import ButtonSuccess from '@/components/buttons/ButtonSuccess.vue'
+import ButtonDanger from '@/components/buttons/ButtonDanger.vue'
+import ButtonWarning from '@/components/buttons/ButtonWarning.vue'
+import ButtonInfo from '@/components/buttons/ButtonInfo.vue'
+import ModalGenerator from '@/components/ModalGenerator.vue'
 
-const sectionTitle = "Location Editor"
-const sectionSubtitle = ""
+// Import the toast function from bulma-toast
+import { toast } from 'bulma-toast'
 
+const sectionTitle = "Location Administration"
+// const sectionSubtitle = "" // Can be added to SectionGenerator
 
-const locations = ref([
-    'Pearl Harbor',
-    'San Diego',
-    'Port Orchard',
-    'Cleavland',
-    'Las Vegas',
-    'Kingsbay',
-    'Norfolk',
-    'Manassas',
-    'Groton',
-    'Remote',
-])
+// Reactive state
+const locations = ref([])
+const newLocationName = ref('')
+const editingId = ref(null)
+const editingName = ref('')
+const isLoading = ref(false)
+const errorMessage = ref('')
 
+// Modal state
+const isDeleteModalActive = ref(false)
+const locationToDelete = ref(null)
+
+// Fetch locations from the database
+const fetchLocations = async () => {
+  isLoading.value = true
+  errorMessage.value = ''
+  
+  try {
+    const response = await fetch('http://localhost:3000/api/locations')
+    if (!response.ok) {
+      throw new Error('Failed to fetch locations')
+    }
+    
+    const data = await response.json()
+    locations.value = data
+  } catch (error) {
+    console.error('Error fetching locations:', error)
+    errorMessage.value = 'Failed to load locations'
+  } finally {
+    isLoading.value = false
+  }
+}
+
+// Add a new location
+const addLocation = async () => {
+  if (!newLocationName.value.trim()) return
+  
+  try {
+    const response = await fetch('http://localhost:3000/api/locations', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ name: newLocationName.value.trim() })
+    })
+    
+    if (!response.ok) {
+      throw new Error('Failed to add location')
+    }
+    
+    // Get the newly created location from the response
+    const newLocation = await response.json()
+    
+    // Clear input and refresh locations
+    newLocationName.value = ''
+    await fetchLocations()
+
+    toast({
+      message: 'Location added successfully',
+      type: 'is-success',
+      dismissible: true,
+      animate: { in: 'fadeIn', out: 'fadeOut' },
+    })
+  } catch (error) {
+    console.error('Error adding location:', error)
+    errorMessage.value = 'Failed to add location'
+    
+    toast({
+      message: 'Error adding location',
+      type: 'is-danger',
+      dismissible: true,
+      animate: { in: 'fadeIn', out: 'fadeOut' },
+    })
+  }
+}
+
+// Start editing a location
+const startEditing = (location) => {
+  editingId.value = location.id
+  editingName.value = location.name
+}
+
+// Cancel editing
+const cancelEditing = () => {
+  editingId.value = null
+  editingName.value = ''
+}
+
+// Save edited location
+const saveLocation = async () => {
+  if (!editingName.value.trim() || !editingId.value) return
+  
+  try {
+    const response = await fetch(`http://localhost:3000/api/locations/${editingId.value}`, {
+      method: 'PUT',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({ name: editingName.value.trim() })
+    })
+    
+    if (!response.ok) {
+      throw new Error('Failed to update location')
+    }
+    
+    // Reset editing state and refresh locations
+    cancelEditing()
+    await fetchLocations()
+
+    toast({
+      message: 'Location updated successfully',
+      type: 'is-success',
+      dismissible: true,
+      animate: { in: 'fadeIn', out: 'fadeOut' },
+    })
+  } catch (error) {
+    console.error('Error updating location:', error)
+    errorMessage.value = 'Failed to update location'
+    
+    toast({
+      message: 'Error updating location',
+      type: 'is-danger',
+      dismissible: true,
+      animate: { in: 'fadeIn', out: 'fadeOut' },
+    })
+  }
+}
+
+// Show delete modal
+const showDeleteModal = (location) => {
+  locationToDelete.value = location
+  isDeleteModalActive.value = true
+}
+
+// Confirm delete a location
+const confirmDeleteLocation = async () => {
+  if (!locationToDelete.value) return
+  
+  try {
+    const response = await fetch(`http://localhost:3000/api/locations/${locationToDelete.value.id}`, {
+      method: 'DELETE'
+    })
+    
+    if (!response.ok) {
+      throw new Error('Failed to delete location')
+    }
+    
+    await fetchLocations()
+    
+    toast({
+      message: 'Location deleted successfully',
+      type: 'is-success',
+      dismissible: true,
+      animate: { in: 'fadeIn', out: 'fadeOut' },
+    })
+  } catch (error) {
+    console.error('Error deleting location:', error)
+    errorMessage.value = 'Failed to delete location'
+    
+    toast({
+      message: 'Error deleting location',
+      type: 'is-danger',
+      dismissible: true,
+      animate: { in: 'fadeIn', out: 'fadeOut' },
+    })
+  } finally {
+    locationToDelete.value = null
+  }
+}
+
+// Fetch locations on component mount
+onMounted(fetchLocations)
 </script>
 
 <template>
-    <SectionGenerator :sectionTitle="sectionTitle" :sectionSubtitle="sectionSubtitle" />
-    <div class="box">
-        <div class="columns">
-            <div class="column is-11">
-                <InputfieldGenerator />
-            </div>
-            <div class="column">
-                <ButtonSuccess buttonText="Save" />
-            </div>
-        </div>
-    </div>
+  <SectionGenerator :sectionTitle="sectionTitle" />
+  
+  <div v-if="errorMessage" class="notification is-danger">
+    {{ errorMessage }}
+  </div>
+  <label class="label">Create New Location:</label>
+  <div class="box">
     <div class="columns">
-        <div class="column is-4">
-            <div class="box">
-                <div>
-                    <ReadOnlyInputFeild valueText="Pearl Harbor"/>
-                </div>
-                <div>
-                    <button class="button is-small">Edit</button>
-                    <button class="button is-small">Delete</button>
-                </div>
-            </div>
-        </div>
-        <div class="column is-4">
-            <div class="box">
-                
-                <div>
-                    <ReadOnlyInputFeild valueText="San Deigo"/>
-                </div>
-            </div>
-        </div>
-        <div class="column is-4">
-            <div class="box">
-                <div>
-                    <ReadOnlyInputFeild valueText="Port Orchard"/>
-                </div>
-            </div>
-        </div>
+      <div class="column is-11">
+        <InputfieldGenerator 
+          placeholder="Enter a new location"
+          :valueText="newLocationName"
+          @update:valueText="(val) => newLocationName = val"
+        />
+      </div>
+      <div class="column">
+        <ButtonSuccess buttonText="Save" @click="addLocation" />
+      </div>
     </div>
+  </div>
+  <SectionGenerator sectionTitle="Current Locations" />
+  
+  <div v-if="isLoading && locations.length === 0" class="has-text-centered">
+    <p>Loading locations...</p>
+  </div>
+  
+  <div class="columns is-multiline">
+    <div class="column is-4" v-for="location in locations" :key="location.id">
+      <div class="box">
+        <div class="columns">
+          <div class="column">
+            <ReadOnlyInputField v-if="editingId !== location.id" :valueText="location.name" />
+            <InputfieldGenerator
+              v-else
+              :valueText="editingName"
+              @update:valueText="(val) => editingName = val"
+              @keyup.enter="saveLocation"
+            />
+          </div>
+        </div>
+        <div class="columns">
+          <div class="column is-7"></div>
+          <div class="column is-2">
+            <ButtonInfo 
+              v-if="editingId !== location.id"
+              buttonText="Edit" 
+              extraClass="is-small"
+              @click="startEditing(location)"
+            />
+            <ButtonSuccess
+              v-else
+              buttonText="Save"
+              extraClass="is-small"
+              @click="saveLocation"
+            />
+          </div>
+          <div class="column is-2">
+            <ButtonDanger
+              v-if="editingId !== location.id"
+              buttonText="Delete"
+              extraClass="is-small is-outlined"
+              @click="showDeleteModal(location)"
+            />
+            <ButtonWarning
+              v-else
+              buttonText="Cancel"
+              extraClass="is-small"
+              @click="cancelEditing"
+            />
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Delete Confirmation Modal -->
+  <ModalGenerator
+    :isActive="isDeleteModalActive"
+    title="Confirm Location Deletion"
+    :message="locationToDelete ? `Are you sure you want to delete the location '${locationToDelete.name}'?` : 'Are you sure you want to delete this location?'"
+    confirmButtonText="Delete"
+    :isDanger="true"
+    :requireConfirmationText="true"
+    confirmationPrompt="For security, please confirm deletion by typing:"
+    :expectedConfirmationText="locationToDelete ? `Delete/${locationToDelete.name}` : ''"
+    @confirm="confirmDeleteLocation"
+    @cancel="isDeleteModalActive = false"
+    @close="isDeleteModalActive = false"
+  />
 </template>

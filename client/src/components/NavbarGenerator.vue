@@ -26,6 +26,13 @@ const route = useRoute()
                             >
                             Locations
                         </router-link>
+                        <router-link
+                            to="/personnel"
+                            class="navbar-item"
+                            :class="{ 'is-selected': route.path === '/personnel' }"
+                            >
+                            Personnel
+                        </router-link>
                     </div>
                 </div>
             </div>
