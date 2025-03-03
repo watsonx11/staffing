@@ -1,12 +1,13 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import SectionGenerator from '@/components/SectionGenerator.vue'
-import InputFieldGenerator from '@/components/InputFieldGenerator.vue'
-import SelectInputFieldGenerator from '@/components/input_fields/SelectInputFieldGenerator.vue'
 import ButtonSuccess from '@/components/buttons/ButtonSuccess.vue'
 import ButtonDanger from '@/components/buttons/ButtonDanger.vue'
-import WorkpackageListGenerator from '@/components/WorkpackageListGenerator.vue'
 import ModalGenerator from '@/components/ModalGenerator.vue'
+import ReadOnlyInputField from '@/components/input_fields/ReadOnlyInputField.vue'
+import ContractListGenerator from '@/components/ContractListGenerator.vue'
+import InputFieldGenerator from '@/components/InputFieldGenerator.vue'
+import SelectInputFieldGenerator from '@/components/input_fields/SelectInputFieldGenerator.vue'
 import { toast } from 'bulma-toast'
 
 // Set the url for the database API
@@ -22,7 +23,9 @@ const dpmeLabel = 'Deputy Program Manager Engineering'
 
 // Reactive references
 const contractNumber = ref('')
-const workpackages = ref([])
+const programName = ref('')
+const projectNumber = ref('')
+const contractInfo = ref([])
 const personnel = ref([])
 const isLoading = ref(true)
 const errorMessage = ref('')
@@ -53,6 +56,7 @@ const selectFieldInformation = computed(() => [
 // Array of information to create Input Fields
 const inputFieldInformation = [
   { name: 'Contract Number', placeholder: 'N00024-24-C-6240', colSize: 'is-4' },
+  { name: 'Program Name', placeholder: 'Nosis', colSize: 'is-4' },
 ]
 
 // Function to fetch personnel data from the API
@@ -98,9 +102,11 @@ const fetchWorkpackages = async () => {
 
     const data = await response.json()
     // Map the data to match the format expected by WorkpackageListGenerator
-    workpackages.value = data.map(wp => ({ 
+    contractInfo.value = data.map(wp => ({ 
       id: wp.id,
-      contractNumber: wp.contract_number
+      contractNumber: wp.contract_number,
+      programName: wp.program_name,
+      projectNumber: wp.project_number
     }))
   } catch (error) {
     console.error('Error fetching workpackages:', error)
@@ -134,6 +140,26 @@ const saveContract = async () => {
     return
   }
 
+  if (!programName.value) {
+    toast({
+      message: 'Please enter a program name',
+      type: 'is-warning',
+      dismissible: false,
+      animate: { in: 'fadeIn', out: 'fadeOut' },
+    })
+    return
+  }
+
+  if (!projectNumber.value) {
+    toast({
+      message: 'Please enter a program name',
+      type: 'is-warning',
+      dismissible: false,
+      animate: { in: 'fadeIn', out: 'fadeOut' },
+    })
+    return
+  }
+
   try {
     const response = await fetch(`${apiAddress}/api/workpackages`, {
       method: 'POST',
@@ -142,8 +168,8 @@ const saveContract = async () => {
       },
       body: JSON.stringify({
         contract_number: contractNumber.value,
-        program_name: 'TBD', // Default value
-        project_number: 'TBD', // Default value
+        program_name: programName.value,
+        project_number: projectNumber.value,
         pm_id: 1, // Default value - update as needed
         fa_id: 1, // Default value - update as needed
         dpme_id: 1, // Default value - update as needed
@@ -155,8 +181,10 @@ const saveContract = async () => {
       throw new Error(errorData.error || 'Failed to save contract')
     }
 
-    // Clear the input after successful save
+    // Clear the inputs after successful save
     contractNumber.value = ''
+    programName.value = ''
+    projectNumber.value = ''
 
     // Show success message
     toast({
@@ -166,7 +194,7 @@ const saveContract = async () => {
       animate: { in: 'fadeIn', out: 'fadeOut' },
     })
 
-    // Refresh the workpackages list
+    // Refresh the contract information list
     fetchWorkpackages()
   } catch (error) {
     console.error('Error saving contract:', error)
@@ -210,7 +238,7 @@ const deleteWorkpackage = async () => {
       animate: { in: 'fadeIn', out: 'fadeOut' },
     })
 
-    // Refresh the workpackages list
+    // Refresh the contract information list
     fetchWorkpackages()
   } catch (error) {
     console.error('Error deleting workpackage:', error)
@@ -241,19 +269,45 @@ onMounted(() => {
   <div class="box">
     <!-- Master Contract Information Row -->
     <div class="columns">
-      <div 
-        v-for="item in inputFieldInformation"
-        :key="item.name"
-        :class="['column', item.colSize]"
-      >
-        <label class="label">{{ item.name }}:</label>
+      <!-- Contract Number field -->
+      <div class="column is-4">
+        <label class="label">Contract Number:</label>
         <div class="field">
           <div class="control">
             <input 
               class="input" 
               type="text" 
-              :placeholder="item.placeholder" 
+              placeholder="N00024-24-C-6240" 
               v-model="contractNumber"
+            />
+          </div>
+        </div>
+      </div>
+      
+      <!-- Program Name field -->
+      <div class="column is-4">
+        <label class="label">Program Name:</label>
+        <div class="field">
+          <div class="control">
+            <input 
+              class="input" 
+              type="text" 
+              placeholder="Nosis" 
+              v-model="programName"
+            />
+          </div>
+        </div>
+      </div>
+      <!-- Project Number field -->
+      <div class="column is-4">
+        <label class="label">Project Number:</label>
+        <div class="field">
+          <div class="control">
+            <input 
+              class="input" 
+              type="text" 
+              placeholder="538111" 
+              v-model="projectNumber"
             />
           </div>
         </div>
@@ -279,26 +333,7 @@ onMounted(() => {
   </div>
   <!-- Top Contract Information -->
   <SectionGenerator sectionTitle="Contract Information" />
-  
-  <!-- Custom WorkpackageListGenerator with delete buttons -->
-  <div class="columns is-multiline">
-    <div class="column is-12"
-      v-for="(item, index) in workpackages"
-      :key="index"
-    >
-      <div class="box">
-        <div class="columns">
-          <div class="column">
-            {{ item.contractNumber }}
-          </div>
-          <div class="column is-narrow">
-            <ButtonDanger buttonText="Delete" @click="showDeleteModal(item)" />
-          </div>
-        </div>
-      </div>
-    </div>
-  </div>
-  
+  <ContractListGenerator :inputArray="contractInfo" @deleteItem="showDeleteModal" />
   <!-- Delete Confirmation Modal -->
   <ModalGenerator
     :isActive="isDeleteModalActive"
