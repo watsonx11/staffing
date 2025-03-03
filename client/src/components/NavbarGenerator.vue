@@ -1,6 +1,14 @@
 <script setup>
 import { useRoute } from 'vue-router'
 const route = useRoute()
+
+// Define navigation bar links
+const managementMenuItems = [
+    { path: '/workpackages', label: "Workpackages" },
+    { path: '/personnel', label: "Personnel" },
+    { path: '/locations', label: "Locations" },
+]
+
 </script>
 
 <template>
@@ -20,18 +28,13 @@ const route = useRoute()
                     </a>
                     <div class="navbar-dropdown">
                         <router-link
-                            to="/locations"
+                            v-for="(item, index) in managementMenuItems"
+                            :key="index"
+                            :to="item.path"
                             class="navbar-item"
-                            :class="{ 'is-selected': route.path === '/locations' }"
-                            >
-                            Locations
-                        </router-link>
-                        <router-link
-                            to="/personnel"
-                            class="navbar-item"
-                            :class="{ 'is-selected': route.path === '/personnel' }"
-                            >
-                            Personnel
+                            :class="{ 'is-selected': route.path === item.path }"
+                        >
+                            {{ item.label }}
                         </router-link>
                     </div>
                 </div>

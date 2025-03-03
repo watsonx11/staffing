@@ -10,5 +10,7 @@
     <include file="db/changelog/changes/03-create-personnel.yaml"/>
     <include file="db/changelog/changes/04-change-personnel-email-nullable.yaml"/>
     <include file="db/changelog/changes/05-add-personnel-notes-column.yaml"/>
+    <include file="db/changelog/changes/06-add-personnel-position-column.yaml"/>
+    <include file="db/changelog/changes/07-create-workpackage-table.yaml"/>
 
 </databaseChangeLog>

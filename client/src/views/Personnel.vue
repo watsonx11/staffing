@@ -7,6 +7,16 @@ import ButtonDanger from '@/components/buttons/ButtonDanger.vue'
 import ModalGenerator from '@/components/ModalGenerator.vue'
 import { toast } from 'bulma-toast'
 
+// Set the url for the database API
+const apiAddress = 'http://localhost:3000' // ${apiAddress}
+
+const positionRadio = [
+  "N/A",
+  "Program Manager",
+  "Financial Analyst",
+  "Deputy Program Manager Engineering"
+]
+
 // Reactive state
 const personnel = ref([])
 const locations = ref([])
@@ -19,9 +29,10 @@ const firstName = ref('')
 const lastName = ref('')
 const emailAddress = ref('')
 const selectedLocation = ref('')
-const notes = ref('') // New notes field
+const notes = ref('')
 const selectedPersonnel = ref(null)
 const isEditing = ref(false)
+const selectedPosition = ref('N/A') // Default position selection
 
 // Modal state
 const isDeleteModalActive = ref(false)
@@ -35,7 +46,7 @@ const fetchLocations = async () => {
   errorMessage.value = ''
   
   try {
-    const response = await fetch('http://localhost:3000/api/locations')
+    const response = await fetch(`${apiAddress}/api/locations`)
     if (!response.ok) {
       throw new Error('Failed to fetch locations')
     }
@@ -49,7 +60,7 @@ const fetchLocations = async () => {
     toast({
       message: 'Error loading locations',
       type: 'is-danger',
-      dismissible: true,
+      dismissible: false,
       animate: { in: 'fadeIn', out: 'fadeOut' },
     })
   } finally {
@@ -63,7 +74,7 @@ const fetchPersonnel = async () => {
   errorMessage.value = ''
   
   try {
-    const response = await fetch('http://localhost:3000/api/personnel')
+    const response = await fetch(`${apiAddress}/api/personnel`)
     if (!response.ok) {
       throw new Error('Failed to fetch personnel')
     }
@@ -77,7 +88,7 @@ const fetchPersonnel = async () => {
     toast({
       message: 'Error loading personnel',
       type: 'is-danger',
-      dismissible: true,
+      dismissible: false,
       animate: { in: 'fadeIn', out: 'fadeOut' },
     })
   } finally {
@@ -92,7 +103,7 @@ const handleSubmit = async () => {
     toast({
       message: 'First name, Last name, and Location are required',
       type: 'is-warning',
-      dismissible: true,
+      dismissible: false,
       animate: { in: 'fadeIn', out: 'fadeOut' },
     })
     return
@@ -105,13 +116,14 @@ const handleSubmit = async () => {
     last_name: lastName.value,
     email_address: emailAddress.value,
     location_id: parseInt(selectedLocation.value),
-    notes: notes.value // Add notes to the data payload
+    notes: notes.value,
+    position: selectedPosition.value // Add position to the data payload
   }
   
   try {
     let response
     let method
-    let url = 'http://localhost:3000/api/personnel'
+    let url = `${apiAddress}/api/personnel`
     
     if (isEditing.value && selectedPersonnel.value) {
       // Update existing personnel
@@ -144,7 +156,7 @@ const handleSubmit = async () => {
         ? `${firstName.value} ${lastName.value} updated successfully` 
         : `${firstName.value} ${lastName.value} added successfully`,
       type: 'is-success',
-      dismissible: true,
+      dismissible: false,
       animate: { in: 'fadeIn', out: 'fadeOut' },
     })
     
@@ -154,7 +166,7 @@ const handleSubmit = async () => {
     toast({
       message: error.message || 'Failed to save personnel',
       type: 'is-danger',
-      dismissible: true,
+      dismissible: false,
       animate: { in: 'fadeIn', out: 'fadeOut' },
     })
   } finally {
@@ -172,7 +184,8 @@ const handleEdit = (person) => {
   lastName.value = person.last_name
   emailAddress.value = person.email_address
   selectedLocation.value = person.location_id.toString()
-  notes.value = person.notes || '' // Populate notes field
+  notes.value = person.notes || ''
+  selectedPosition.value = person.position || 'N/A' // Set position or default to N/A
   
   // Scroll to form
   window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -189,7 +202,7 @@ const confirmDelete = async () => {
   if (!personToDelete.value) return
   
   try {
-    const response = await fetch(`http://localhost:3000/api/personnel/${personToDelete.value.id}`, {
+    const response = await fetch(`${apiAddress}/api/personnel/${personToDelete.value.id}`, {
       method: 'DELETE'
     })
     
@@ -203,7 +216,7 @@ const confirmDelete = async () => {
     toast({
       message: `${personToDelete.value.first_name} ${personToDelete.value.last_name} deleted successfully`,
       type: 'is-success',
-      dismissible: true,
+      dismissible: false,
       animate: { in: 'fadeIn', out: 'fadeOut' },
     })
   } catch (error) {
@@ -212,11 +225,12 @@ const confirmDelete = async () => {
     toast({
       message: 'Failed to delete personnel',
       type: 'is-danger',
-      dismissible: true,
+      dismissible: false,
       animate: { in: 'fadeIn', out: 'fadeOut' },
     })
   } finally {
     personToDelete.value = null
+    isDeleteModalActive.value = false // Close the modal after deletion
   }
 }
 
@@ -226,14 +240,20 @@ const resetForm = () => {
   lastName.value = ''
   emailAddress.value = ''
   selectedLocation.value = ''
-  notes.value = '' // Reset notes field
+  notes.value = ''
   selectedPersonnel.value = null
   isEditing.value = false
+  selectedPosition.value = 'N/A' // Reset position to default
 }
 
 // Handle location selection
 const handleLocationChange = (event) => {
   selectedLocation.value = event.target.value
+}
+
+// Handle position selection
+const handlePositionChange = (position) => {
+  selectedPosition.value = position
 }
 
 // Fetch data when the component is mounted
@@ -252,71 +272,91 @@ onMounted(() => {
     
     <label class="label">{{ isEditing ? 'Edit Personnel' : 'Add New Personnel' }}</label>
     <div class="box">
-        <div class="columns">
-            <div class="column is-1"></div>
-            <div class="column is-2">
-                <label class="label"><span class="has-text-danger">*</span> First Name:</label>
-                <InputfieldGenerator 
-                    placeholder="First Name"
-                    :valueText="firstName"
-                    @update:valueText="(val) => firstName = val"
-                />
-            </div>
-            <div class="column is-2">
-                <label class="label"><span class="has-text-danger">*</span> Last Name:</label>
-                <InputfieldGenerator 
-                    placeholder="Last Name"
-                    :valueText="lastName"
-                    @update:valueText="(val) => lastName = val"
-                    />
-            </div>
-            <div class="column is-3">
-                <label class="label">Email:</label>
-                <InputfieldGenerator 
-                placeholder="alex.smith@gd-ms.us"
-                :valueText="emailAddress"
-                @update:valueText="(val) => emailAddress = val"
-                />
-            </div>
-            <div class="column is-2">
-                <label class="label"><span class="has-text-danger">*</span> Location:</label>
-                <div class="select is-normal" :class="{ 'is-loading': isLoading }">
-                    <select v-model="selectedLocation" @change="handleLocationChange">
-                        <option value="" disabled>Select location</option>
-                        <option v-for="location in locations" :key="location.id" :value="location.id">
-                            {{ location.name }}
-                        </option>
-                    </select>
-                </div>
-            </div>
-            <div class="column is-1">
-                <label class="label">&nbsp;</label>
-                <ButtonSuccess 
-                  :buttonText="isEditing ? 'Update' : 'Save'"
-                  :class="{ 'is-loading': isSubmitting }"
-                  @click="handleSubmit"
-                />
-            </div>
-        </div>
-        <div class="columns">
-          <div class="column is-1"></div>
-          <div class="column is-10">
-            <label class="label">Notes:</label>
-            <textarea 
-              class="textarea" 
-              placeholder="Add notes about this personnel (optional)..." 
-              rows="5"
-              v-model="notes"
-            ></textarea>
+      <div class="columns">
+        <div class="column is-1"></div>
+          <div class="column is-2">
+            <label class="label"><span class="has-text-danger">*</span> First Name:</label>
+              <InputfieldGenerator 
+                placeholder="First Name"
+                :valueText="firstName"
+                @update:valueText="(val) => firstName = val"
+              />
           </div>
-        </div>
-        <div class="columns" v-if="isEditing">
-            <div class="column is-11 has-text-right">
-              <ButtonDanger buttonText="Cancel" extraClass="is-outlined" @click="resetForm" />
+          <div class="column is-2">
+            <label class="label"><span class="has-text-danger">*</span> Last Name:</label>
+            <InputfieldGenerator 
+              placeholder="Last Name"
+              :valueText="lastName"
+              @update:valueText="(val) => lastName = val"
+            />
+          </div>
+          <div class="column is-3">
+            <label class="label">Email:</label>
+            <InputfieldGenerator 
+              placeholder="alex.smith@gd-ms.us"
+              :valueText="emailAddress"
+              @update:valueText="(val) => emailAddress = val"
+            />
+          </div>
+          <div class="column is-2">
+            <label class="label"><span class="has-text-danger">*</span> Location:</label>
+            <div class="select is-normal" :class="{ 'is-loading': isLoading }">
+              <select v-model="selectedLocation" @change="handleLocationChange">
+                <option value="" disabled>Select location</option>
+                  <option v-for="location in locations" :key="location.id" :value="location.id">
+                    {{ location.name }}
+                  </option>
+              </select>
             </div>
+          </div>
+          <div class="column is-1">
+            <label class="label">&nbsp;</label>
+            <ButtonSuccess 
+              :buttonText="isEditing ? 'Update' : 'Save'"
+              :class="{ 'is-loading': isSubmitting }"
+              @click="handleSubmit"
+            />
+          </div>
+      </div>
+      <div class="columns">
+        <div class="column is-1"></div>
+          <div class="column">
+            <label class="label">Position:</label>
+            <div class="radios">
+              <label class="radio"
+                v-for="(position, index) in positionRadio"
+                :key="index"
+              >
+                <input 
+                  type="radio" 
+                  name="position" 
+                  :value="position"
+                  :checked="selectedPosition === position"
+                  @change="handlePositionChange(position)" 
+                />
+                {{ position }}
+              </label>
+            </div>
+          </div>
+      </div>
+      <div class="columns">
+        <div class="column is-1"></div>
+        <div class="column is-10">
+          <label class="label">Notes:</label>
+          <textarea 
+            class="textarea" 
+            placeholder="Add notes about this personnel (optional)..." 
+            rows="5"
+            v-model="notes"
+          ></textarea>
         </div>
+      </div>
+      <div class="columns" v-if="isEditing">
+          <div class="column is-11 has-text-right">
+            <ButtonDanger buttonText="Cancel" extraClass="is-outlined" @click="resetForm" />
+          </div>
+      </div>
     </div>
-    
     <SectionGenerator sectionTitle="Current Personnel" />
     
     <div v-if="isLoading" class="has-text-centered my-4">
@@ -342,7 +382,14 @@ onMounted(() => {
           <div class="card-content">
             <div class="content">
               <span class="has-text-weight-bold">Location: </span>{{ person.location_name }}<br>
-              <a :href="`mailto:` + person.email_address">{{ person.email_address }}</a>
+              <a v-if="person.email_address" :href="`mailto:` + person.email_address">{{ person.email_address }}</a>
+              <span v-else class="has-text-grey-light">No email provided</span>
+              
+              <!-- Display position if it exists -->
+              <div v-if="person.position && person.position !== 'N/A'" class="mt-2">
+                <span class="has-text-weight-bold">Position: </span>
+                <span class="tag is-info">{{ person.position }}</span>
+              </div>
               
               <!-- Display notes if they exist -->
               <div v-if="person.notes" class="mt-2">

@@ -7,7 +7,7 @@ import router from '@/plugins/router'
 // Import Bulma's CSS
 import 'bulma/css/bulma.css'
 
-// Import the toast function (and optionally setDefaults if needed)
+// Import the toast function and setDefaults)
 import { toast, setDefaults } from 'bulma-toast'
 
 // (Optional) Update default configuration if you need custom settings
@@ -16,6 +16,9 @@ setDefaults({
     position: 'bottom-right',
     closeOnClick: false,
 })
+
+// Import bulma calendar 
+import 'bulma-calendar/dist/css/bulma-calendar.min.css'
 
 const app = createApp(App)
 

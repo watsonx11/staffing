@@ -1,0 +1,13 @@
+databaseChangeLog:
+  - changeSet:
+      id: add-position-column
+      author: sean.watson
+      changes:
+        - addColumn:
+            tableName: personnel
+            columns:
+              - column:
+                  name: position
+                  type: TEXT
+                  constraints:
+                    nullable: true

@@ -8,9 +8,12 @@ import ButtonDanger from '@/components/buttons/ButtonDanger.vue'
 import ButtonWarning from '@/components/buttons/ButtonWarning.vue'
 import ButtonInfo from '@/components/buttons/ButtonInfo.vue'
 import ModalGenerator from '@/components/ModalGenerator.vue'
+import { toast } from 'bulma-toast'
+
+// Set the url for the database API
+const apiAddress = 'http://localhost:3000'
 
 // Import the toast function from bulma-toast
-import { toast } from 'bulma-toast'
 
 const sectionTitle = "Location Administration"
 // const sectionSubtitle = "" // Can be added to SectionGenerator
@@ -33,7 +36,7 @@ const fetchLocations = async () => {
   errorMessage.value = ''
   
   try {
-    const response = await fetch('http://localhost:3000/api/locations')
+    const response = await fetch(`${apiAddress}/api/locations`)
     if (!response.ok) {
       throw new Error('Failed to fetch locations')
     }
@@ -53,7 +56,7 @@ const addLocation = async () => {
   if (!newLocationName.value.trim()) return
   
   try {
-    const response = await fetch('http://localhost:3000/api/locations', {
+    const response = await fetch(`${apiAddress}/api/locations`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -64,9 +67,6 @@ const addLocation = async () => {
     if (!response.ok) {
       throw new Error('Failed to add location')
     }
-    
-    // Get the newly created location from the response
-    const newLocation = await response.json()
     
     // Clear input and refresh locations
     newLocationName.value = ''
@@ -108,7 +108,7 @@ const saveLocation = async () => {
   if (!editingName.value.trim() || !editingId.value) return
   
   try {
-    const response = await fetch(`http://localhost:3000/api/locations/${editingId.value}`, {
+    const response = await fetch(`${apiAddress}/api/locations/${editingId.value}`, {
       method: 'PUT',
       headers: {
         'Content-Type': 'application/json'
@@ -154,7 +154,7 @@ const confirmDeleteLocation = async () => {
   if (!locationToDelete.value) return
   
   try {
-    const response = await fetch(`http://localhost:3000/api/locations/${locationToDelete.value.id}`, {
+    const response = await fetch(`${apiAddress}/api/locations/${locationToDelete.value.id}`, {
       method: 'DELETE'
     })
     
