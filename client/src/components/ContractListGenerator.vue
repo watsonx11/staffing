@@ -39,6 +39,20 @@ const handleDelete = (item) => {
                         <label class="label">Project Number:</label>
                         <ReadOnlyInputField :valueText="item.projectNumber" />
                     </div>
+                </div>
+                <div class="columns">
+                    <div class="column">
+                        <label class="label">PM Name:</label>
+                        <ReadOnlyInputField :valueText="item.pmName" />
+                    </div>
+                    <div class="column">
+                        <label class="label">FA Name:</label>
+                        <ReadOnlyInputField :valueText="item.faName" />
+                    </div>
+                    <div class="column">
+                        <label class="label">DPME Name:</label>
+                        <ReadOnlyInputField :valueText="item.dpmeName" />
+                    </div>
                     <div class="column is-narrow">
                         <label class="label">&nbsp;</label>
                         <div class="buttons">
