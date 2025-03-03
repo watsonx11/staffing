@@ -15,13 +15,22 @@ app.use(cors({
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 
-// PostgreSQL connection setup
+// PostgreSQL connection setup (legacy standalone)
+// const pool = new Pool({
+//   user: 'staffing-user',
+//   host: 'localhost',
+//   database: 'staffing',
+//   password: 'changeMe',
+//   port: 5432,
+// });
+
+// PostgreSQL connection setup with environmental variables
 const pool = new Pool({
-  user: 'staffing-user',
-  host: 'localhost',
-  database: 'staffing',
-  password: 'changeMe',
-  port: 5432,
+  user: process.env.PGUSER || 'staffing-user',
+  host: process.env.PGHOST || 'localhost',
+  database: process.env.PGDATABASE || 'staffing',
+  password: process.env.PGPASSWORD || 'changeMe',
+  port: process.env.PGPORT || 5432,
 });
 
 // Test database connection
