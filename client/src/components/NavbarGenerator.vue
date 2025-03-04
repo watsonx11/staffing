@@ -4,7 +4,7 @@ const route = useRoute()
 
 // Define navigation bar links
 const managementMenuItems = [
-    { path: '/workpackages', label: "Workpackages" },
+    { path: '/contracts', label: "Contracts" },
     { path: '/personnel', label: "Personnel" },
     { path: '/locations', label: "Locations" },
 ]

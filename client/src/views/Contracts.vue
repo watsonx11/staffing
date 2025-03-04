@@ -2,9 +2,10 @@
 import { ref, onMounted, computed } from 'vue'
 import SectionGenerator from '@/components/SectionGenerator.vue'
 import ButtonSuccess from '@/components/buttons/ButtonSuccess.vue'
+import ButtonDanger from '@/components/buttons/ButtonDanger.vue'
 import ModalGenerator from '@/components/ModalGenerator.vue'
 import ContractListGenerator from '@/components/ContractListGenerator.vue'
-// import InputFieldGenerator from '@/components/InputfieldGenerator.vue'
+import InputfieldGenerator from '@/components/InputfieldGenerator.vue'
 import SelectInputFieldGenerator from '@/components/input_fields/SelectInputFieldGenerator.vue'
 import { toast } from 'bulma-toast'
 
@@ -12,7 +13,12 @@ import { toast } from 'bulma-toast'
 const apiAddress = 'http://localhost:3000' // ${apiAddress}
 
 // Section Title
-const sectionTitle = "Workpackage Administration"
+const sectionTitle = "Contracts Administration"
+
+// Form mode status (create or edit)
+const isEditMode = ref(false)
+const editingId = ref(null)
+const formTitle = computed(() => isEditMode.value ? "Edit Contract:" : "Create new Contract:")
 
 // Variables to support filtering of positions
 const pmLabel = 'Program Manager'
@@ -64,17 +70,12 @@ const inputFieldInformation = [
 
 // Function to handle selection changes
 const handleSelection = (position, value) => {
-  console.log(`Selection changed: ${position} = ${value}`)
-  
   if (position === 'PM') {
     selectedPM.value = value
-    console.log('Updated selectedPM to:', selectedPM.value)
   } else if (position === 'FA') {
     selectedFA.value = value
-    console.log('Updated selectedFA to:', selectedFA.value)
   } else if (position === 'DPME') {
     selectedDPME.value = value
-    console.log('Updated selectedDPME to:', selectedDPME.value)
   } else {
     console.warn(`Unknown position: ${position}`)
   }
@@ -83,7 +84,6 @@ const handleSelection = (position, value) => {
 // Function to get personnel ID by full name
 const getPersonnelIdByName = (fullName) => {
   if (!fullName || fullName.trim() === '') {
-    console.warn('Empty fullName passed to getPersonnelIdByName')
     return null
   }
   
@@ -93,14 +93,25 @@ const getPersonnelIdByName = (fullName) => {
   
   if (!person) {
     console.warn(`No personnel found with name: "${fullName}"`)
-    console.log('Available personnel:', personnel.value.map(p => ({
-      id: p.id,
-      name: `${p.first_name} ${p.last_name}`,
-      position: p.position
-    })))
   }
   
   return person ? person.id : null
+}
+
+// Function to get personnel name by ID
+const getPersonnelNameById = (id) => {
+  if (!id) {
+    return ''
+  }
+  
+  const person = personnel.value.find(p => p.id === id)
+  
+  if (!person) {
+    console.warn(`No personnel found with id: "${id}"`)
+    return ''
+  }
+  
+  return `${person.first_name} ${person.last_name}`
 }
 
 // Function to fetch personnel data from the API
@@ -147,10 +158,8 @@ const fetchWorkpackages = async () => {
     // Check the raw response for debugging
     const rawResponseClone = await response.clone()
     const rawText = await rawResponseClone.text()
-    console.log('Raw API response:', rawText)
 
     const data = await response.json()
-    console.log('Workpackages API response:', data)
     
     // Map the data to match the format expected by WorkpackageListGenerator
     // Handle different possible case variations from the API
@@ -161,7 +170,10 @@ const fetchWorkpackages = async () => {
       projectNumber: wp.project_number,
       pmName: wp.pmname || wp.pmName || wp.pm_name || "Unknown PM",
       faName: wp.faname || wp.faName || wp.fa_name || "Unknown FA",
-      dpmeName: wp.dpmename || wp.dpmeName || wp.dpme_name || "Unknown DPME"
+      dpmeName: wp.dpmename || wp.dpmeName || wp.dpme_name || "Unknown DPME",
+      pm_id: wp.pm_id,
+      fa_id: wp.fa_id,
+      dpme_id: wp.dpme_id
     }))
   } catch (error) {
     console.error('Error fetching workpackages:', error)
@@ -183,8 +195,8 @@ const handleContractInput = (value) => {
   contractNumber.value = value
 }
 
-// Function to save the contract
-const saveContract = async () => {
+// Function to validate form inputs
+const validateFormInputs = () => {
   if (!contractNumber.value) {
     toast({
       message: 'Please enter a contract number',
@@ -192,7 +204,7 @@ const saveContract = async () => {
       dismissible: false,
       animate: { in: 'fadeIn', out: 'fadeOut' },
     })
-    return
+    return false
   }
 
   if (!programName.value) {
@@ -202,7 +214,7 @@ const saveContract = async () => {
       dismissible: false,
       animate: { in: 'fadeIn', out: 'fadeOut' },
     })
-    return
+    return false
   }
 
   if (!projectNumber.value) {
@@ -212,7 +224,7 @@ const saveContract = async () => {
       dismissible: false,
       animate: { in: 'fadeIn', out: 'fadeOut' },
     })
-    return
+    return false
   }
 
   if (!selectedPM.value) {
@@ -222,7 +234,7 @@ const saveContract = async () => {
       dismissible: false,
       animate: { in: 'fadeIn', out: 'fadeOut' },
     })
-    return
+    return false
   }
 
   if (!selectedFA.value) {
@@ -232,7 +244,7 @@ const saveContract = async () => {
       dismissible: false,
       animate: { in: 'fadeIn', out: 'fadeOut' },
     })
-    return
+    return false
   }
 
   if (!selectedDPME.value) {
@@ -242,22 +254,22 @@ const saveContract = async () => {
       dismissible: false,
       animate: { in: 'fadeIn', out: 'fadeOut' },
     })
+    return false
+  }
+
+  return true
+}
+
+// Function to save the contract
+const saveContract = async () => {
+  if (!validateFormInputs()) {
     return
   }
 
-  // Get personnel IDs from selected names
-  console.log('Selected personnel names:', {
-    PM: selectedPM.value,
-    FA: selectedFA.value,
-    DPME: selectedDPME.value
-  })
-  
   const pmId = getPersonnelIdByName(selectedPM.value)
   const faId = getPersonnelIdByName(selectedFA.value)
   const dpmeId = getPersonnelIdByName(selectedDPME.value)
   
-  console.log('Resolved personnel IDs:', { pmId, faId, dpmeId })
-
   if (!pmId || !faId || !dpmeId) {
     toast({
       message: 'Error identifying selected personnel',
@@ -277,38 +289,45 @@ const saveContract = async () => {
     dpme_id: dpmeId,
   }
   
-  console.log('Sending workpackage data to API:', requestData)
-
   try {
-    const response = await fetch(`${apiAddress}/api/workpackages`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(requestData),
-    })
+    let response
+    
+    if (isEditMode.value && editingId.value) {
+      // Update existing workpackage
+      response = await fetch(`${apiAddress}/api/workpackages/${editingId.value}`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData),
+      })
+    } else {
+      // Create new workpackage
+      response = await fetch(`${apiAddress}/api/workpackages`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(requestData),
+      })
+    }
 
     if (!response.ok) {
       const errorData = await response.json()
       throw new Error(errorData.error || 'Failed to save contract')
     }
 
-    // Clear the inputs after successful save
-    contractNumber.value = ''
-    programName.value = ''
-    projectNumber.value = ''
-    selectedPM.value = ''
-    selectedFA.value = ''
-    selectedDPME.value = ''
-
     // Show success message
     toast({
-      message: 'Contract saved successfully',
+      message: isEditMode.value ? 'Contract updated successfully' : 'Contract saved successfully',
       type: 'is-success',
       dismissible: false,
       animate: { in: 'fadeIn', out: 'fadeOut' },
     })
 
+    // Reset form state
+    resetForm()
+    
     // Refresh the contract information list
     fetchWorkpackages()
   } catch (error) {
@@ -321,6 +340,62 @@ const saveContract = async () => {
       animate: { in: 'fadeIn', out: 'fadeOut' },
     })
   }
+}
+
+// Function to reset the form
+const resetForm = () => {
+  // Clear the inputs
+  contractNumber.value = ''
+  programName.value = ''
+  projectNumber.value = ''
+  selectedPM.value = ''
+  selectedFA.value = ''
+  selectedDPME.value = ''
+  
+  // Reset edit mode
+  isEditMode.value = false
+  editingId.value = null
+}
+
+// Function to handle edit button click from the contract list
+const handleEditContract = (item) => {
+  // Set edit mode flag
+  isEditMode.value = true
+  editingId.value = item.id
+  
+  // Populate form fields with the item's data
+  contractNumber.value = item.contractNumber
+  programName.value = item.programName
+  projectNumber.value = item.projectNumber
+  
+  // Populate personnel fields
+  // We need to handle both the case where the display names are already set
+  // and the case where we need to look up IDs
+  if (item.pm_id) {
+    selectedPM.value = getPersonnelNameById(item.pm_id)
+  } else {
+    selectedPM.value = item.pmName
+  }
+  
+  if (item.fa_id) {
+    selectedFA.value = getPersonnelNameById(item.fa_id)
+  } else {
+    selectedFA.value = item.faName
+  }
+  
+  if (item.dpme_id) {
+    selectedDPME.value = getPersonnelNameById(item.dpme_id)
+  } else {
+    selectedDPME.value = item.dpmeName
+  }
+  
+  // Scroll to the form
+  window.scrollTo({ top: 0, behavior: 'smooth' })
+}
+
+// Function to cancel edit
+const cancelEdit = () => {
+  resetForm()
 }
 
 // Function to show delete confirmation modal
@@ -353,6 +428,11 @@ const deleteWorkpackage = async () => {
       animate: { in: 'fadeIn', out: 'fadeOut' },
     })
 
+    // If we're editing the deleted workpackage, reset the form
+    if (isEditMode.value && editingId.value === workpackageToDelete.value.id) {
+      resetForm()
+    }
+
     // Refresh the contract information list
     fetchWorkpackages()
   } catch (error) {
@@ -380,7 +460,7 @@ onMounted(() => {
 
 <template>
   <SectionGenerator :sectionTitle="sectionTitle" />
-  <label class="label">Create Top Level Workpackage:</label>
+  <label class="label">{{ formTitle }}</label>
   <div class="box">
     <!-- Master Contract Information Row -->
     <div class="columns">
@@ -446,14 +526,35 @@ onMounted(() => {
     </div>
     <hr>
     <div class="columns">
-      <div class="column has-text-right">
-        <ButtonSuccess buttonText="Save" @click="saveContract" />
+      <div class="column is-flex is-justify-content-end">
+        <!-- Show different buttons based on edit mode -->
+        <div v-if="isEditMode" class="buttons">
+          <ButtonDanger 
+            buttonText="Cancel" 
+            extraClass="is-outlined" 
+            @click="cancelEdit" 
+          />
+          <ButtonSuccess 
+            buttonText="Update" 
+            @click="saveContract" 
+          />
+        </div>
+        <div v-else>
+          <ButtonSuccess 
+            buttonText="Save" 
+            @click="saveContract" 
+          />
+        </div>
       </div>
     </div>
   </div>
   <!-- Top Contract Information -->
   <SectionGenerator sectionTitle="Contract Information" />
-  <ContractListGenerator :inputArray="contractInfo" @deleteItem="showDeleteModal" />
+  <ContractListGenerator 
+    :inputArray="contractInfo" 
+    @deleteItem="showDeleteModal"
+    @editItem="handleEditContract"
+  />
   <!-- Delete Confirmation Modal -->
   <ModalGenerator
     :isActive="isDeleteModalActive"
