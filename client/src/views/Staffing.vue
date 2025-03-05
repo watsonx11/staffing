@@ -1,8 +1,22 @@
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, defineAsyncComponent } from 'vue'
 import SectionGenerator from '@/components/SectionGenerator.vue'
 
+// Import child components
+const AddChargeCodeModal = defineAsyncComponent(() => import('@/components/staffing/AddChargeCodeModal.vue'))
+const EditChargeCodesModal = defineAsyncComponent(() => import('@/components/staffing/EditChargeCodesModal.vue'))
+
 const sectionTitle = "Charge Code Utilization Dashboard"
+
+// All available charge codes for dropdown selection
+const availableChargeCodes = ref([
+  { id: 1, name: 'Charge Code 1' },
+  { id: 2, name: 'Charge Code 2' },
+  { id: 3, name: 'Charge Code 3' },
+  { id: 4, name: 'Charge Code 4' },
+  { id: 5, name: 'Charge Code 5' },
+  { id: 6, name: 'Charge Code 6' },
+])
 
 // Manage viewable date range with scrolling functionality
 const startMonthIndex = ref(0) // Start with January
@@ -56,18 +70,21 @@ const personnelData = ref([
         name: 'Sean Watson',
         chargeCodes: [
             { 
+                id: 1,
                 name: 'Charge Code 1', 
                 percentage: 50,
                 startDate: new Date('2025-01-01'),
                 endDate: new Date('2026-12-31')
             },
             { 
+                id: 2,
                 name: 'Charge Code 2', 
                 percentage: 30,
                 startDate: new Date('2025-03-01'),
                 endDate: new Date('2025-07-31')
             },
             { 
+                id: 3,
                 name: 'Charge Code 3', 
                 percentage: 20,
                 startDate: new Date('2025-01-01'),
@@ -79,12 +96,14 @@ const personnelData = ref([
         name: 'Al Almanza',
         chargeCodes: [
             { 
+                id: 1,
                 name: 'Charge Code 1', 
                 percentage: 40,
                 startDate: new Date('2025-01-01'),
                 endDate: new Date('2025-12-31')
             },
             { 
+                id: 4,
                 name: 'Charge Code 4', 
                 percentage: 60,
                 startDate: new Date('2025-01-01'),
@@ -96,12 +115,14 @@ const personnelData = ref([
         name: 'DeShawn Baldwin',
         chargeCodes: [
             { 
+                id: 2,
                 name: 'Charge Code 2', 
                 percentage: 70,
                 startDate: new Date('2025-01-01'),
                 endDate: new Date('2025-12-31')
             },
             { 
+                id: 5,
                 name: 'Charge Code 5', 
                 percentage: 30,
                 startDate: new Date('2025-04-01'),
@@ -113,12 +134,14 @@ const personnelData = ref([
         name: 'Jeff Vaught',
         chargeCodes: [
             { 
+                id: 3,
                 name: 'Charge Code 3', 
                 percentage: 80,
                 startDate: new Date('2025-02-01'),
                 endDate: new Date('2025-10-31')
             },
             { 
+                id: 5,
                 name: 'Charge Code 5', 
                 percentage: 20,
                 startDate: new Date('2025-01-01'),
@@ -136,9 +159,50 @@ personnelData.value.forEach(person => {
     expandedCards.value[person.name] = false
 })
 
+// Modal control states
+const activeModals = ref({
+    add: false,
+    edit: false
+})
+const selectedPerson = ref(null)
+
 // Function to toggle card expansion
 const toggleCard = (personName) => {
     expandedCards.value[personName] = !expandedCards.value[personName]
+}
+
+// Function to open add charge code modal
+const openAddModal = (person) => {
+    selectedPerson.value = person
+    activeModals.value.add = true
+}
+
+// Function to open edit charge codes modal
+const openEditModal = (person) => {
+    selectedPerson.value = person
+    activeModals.value.edit = true
+}
+
+// Function to add a new charge code to a person
+const addChargeCode = (newChargeCode) => {
+    if (selectedPerson.value) {
+        const personIndex = personnelData.value.findIndex(p => p.name === selectedPerson.value.name)
+        if (personIndex !== -1) {
+            personnelData.value[personIndex].chargeCodes.push(newChargeCode)
+        }
+    }
+    activeModals.value.add = false
+}
+
+// Function to update existing charge codes
+const updateChargeCodes = (updatedChargeCodes) => {
+    if (selectedPerson.value) {
+        const personIndex = personnelData.value.findIndex(p => p.name === selectedPerson.value.name)
+        if (personIndex !== -1) {
+            personnelData.value[personIndex].chargeCodes = updatedChargeCodes
+        }
+    }
+    activeModals.value.edit = false
 }
 
 // Function to check if a charge code is active for a specific month and year
@@ -214,7 +278,8 @@ const formatDate = (date) => {
                         </button>
                     </header>
                     <footer class="card-footer">
-                        <a href="#" class="card-footer-item">Add</a>
+                        <a href="#" class="card-footer-item" @click.prevent="openAddModal(person)">Add</a>
+                        <a href="#" class="card-footer-item" @click.prevent="openEditModal(person)">Edit</a>
                     </footer>
                 </div>
             </div>
@@ -264,6 +329,24 @@ const formatDate = (date) => {
             </div>
         </div>
     </div>
+    
+    <!-- Add Charge Code Modal -->
+    <AddChargeCodeModal 
+        v-if="activeModals.add" 
+        :person="selectedPerson"
+        :availableChargeCodes="availableChargeCodes"
+        @close="activeModals.add = false"
+        @add="addChargeCode"
+    />
+    
+    <!-- Edit Charge Codes Modal -->
+    <EditChargeCodesModal 
+        v-if="activeModals.edit" 
+        :person="selectedPerson"
+        :availableChargeCodes="availableChargeCodes"
+        @close="activeModals.edit = false"
+        @update="updateChargeCodes"
+    />
 </template>
 
 <style scoped>
