@@ -23,6 +23,13 @@ const managementMenuItems = [
                     >
                     Home
                 </router-link>
+                <router-link
+                    to="/staffing"
+                    class="navbar-item"
+                    :class="{ 'is-selected': route.path === '/staffing' }"
+                    >
+                    Staffing
+                </router-link>
                 <div class="navbar-item has-dropdown is-hoverable">
                     <a class="navbar-link">
                         Management
