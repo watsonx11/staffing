@@ -7,6 +7,7 @@ const routes = [
     { path: '/contracts', name: 'contracts', component: () => import('@/views/Contracts.vue') },
     { path: '/line-items', name: 'line-items', component: () => import('@/views/ContractLineItems.vue') },
     { path: '/staffing', name: 'staffing', component: () => import('@/views/Staffing.vue') },
+    { path: '/roadmap', name: 'roadmap', component: () => import('@/views/Roadmap.vue') },
 ]
 
 const router = createRouter({

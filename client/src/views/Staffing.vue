@@ -568,7 +568,19 @@ const openEditModal = (person) => {
 
 // Function to check if a charge code is active for a specific month and year
 const isChargeCodeActive = (chargeCode, date) => {
-    return chargeCode.startDate <= date && chargeCode.endDate >= date
+    // return chargeCode.startDate <= date && chargeCode.endDate >= date // TODO remove this after testing
+
+    // Get the first day of the the month you are checking
+    const firstDayOfMonth = new Date(date.getFullYear(), date.getMonth(), 1)
+
+    // Get the last day of the month you are checking
+    const lastDayOfMonth = new Date(date.getFullYear(), date.getMonth() +1, 0)
+
+    // Check if any part of the charge ocde's udration overlaps with this month
+    // Charge code is active if
+    // 1. End date is on or after the first day of the month AND
+    // 2. Start date is on or before the last day of the month
+    return chargeCode.endDate >= firstDayOfMonth && chargeCode.startDate <= lastDayOfMonth
 }
 
 // Function to calculate total percentage per month for each person
