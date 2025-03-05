@@ -1,11 +1,76 @@
 <script setup>
+import { ref, onMounted } from 'vue'
 import SectionGenerator from '@/components/SectionGenerator.vue'
+import { toast } from 'bulma-toast'
+import OverallocatedCount from '@/components/home/OverallocatedCount.vue' // Import the new component
 
-const sectionTitle = "Home"
+const sectionTitle = "MRS Staffing Management"
 const sectionSubtitle = ""
-
+// Set the url for the database API
+const apiAddress = 'http://localhost:3000'
+// Reactive state
+const personnelCount = ref(0)
+const isLoading = ref(false)
+const errorMessage = ref('')
+// Fetch personnel count from the database api
+const fetchPersonnelCount = async () => {
+    isLoading.value = true
+    errorMessage.value = ''
+    try {
+        const response = await fetch(`${apiAddress}/api/personnel`)
+        if (!response.ok) {
+            throw new Error('Failed to fetch personnel data')
+        }
+        const data = await response.json()
+        personnelCount.value = data.length
+    } catch (error) {
+        console.error('Error fetching personnel count', error)
+        errorMessage.value = 'Failed to load personnel count'
+        toast({
+            message: 'Error loading personnel count',
+            type: 'is-danger',
+            dismissible: false,
+            animate: { in: 'fadIn', out: 'fadeOut' },
+        })
+    } finally {
+        isLoading.value = false
+    }
+}
+// Fetch personnel on component mount
+onMounted(fetchPersonnelCount)
 </script>
-
 <template>
     <SectionGenerator :sectionTitle="sectionTitle" :sectionSubtitle="sectionSubtitle"/>
+    <div class="box">
+        <div class="level">
+            <div class="level-item has-text-centered">
+                <div
+                v-if="isLoading"    
+                >
+                <p class="heading">Personnel</p>
+                <p class="title">Loading count...</p>
+                </div>
+                <div v-else>
+                    <p class="heading">Personnel</p>
+                    <p class="title">{{ personnelCount }}</p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered">
+                <!-- Over-allocated personnel count component -->
+                <OverallocatedCount />
+            </div>
+            <div class="level-item has-text-centered">
+                <div>
+                    <p class="heading">Personnel</p>
+                    <p class="title">75</p>
+                </div>
+            </div>
+            <div class="level-item has-text-centered">
+                <div>
+                    <p class="heading">Personnel</p>
+                    <p class="title">75</p>
+                </div>
+            </div>
+        </div>
+    </div>
 </template>
