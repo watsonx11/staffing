@@ -12,7 +12,8 @@
     "bulma": "^1.0.3",
     "bulma-calendar": "^7.1.1",
     "bulma-toast": "^2.4.4",
-    "vue": "^3.5.13"
+    "vue": "^3.5.13",
+    "vue-ganttastic": "^0.9.34"
   },
   "devDependencies": {
     "@vitejs/plugin-vue": "^5.2.1",
