@@ -13,5 +13,6 @@
     <include file="db/changelog/changes/06-add-personnel-position-column.yaml"/>
     <include file="db/changelog/changes/07-create-workpackage-table.yaml"/>
     <include file="db/changelog/changes/08-create-contract-line-items-table.yaml"/>
+    <include file="db/changelog/changes/09-create-personnel-charge-codes-table.yaml"/>
 
 </databaseChangeLog>

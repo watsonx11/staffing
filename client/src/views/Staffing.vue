@@ -1,6 +1,6 @@
 <!-- Staffing.vue -->
 <script setup>
-import { ref, computed, defineAsyncComponent } from 'vue'
+import { ref, computed, defineAsyncComponent, onMounted, watch } from 'vue'
 import SectionGenerator from '@/components/SectionGenerator.vue'
 
 // Import child components
@@ -9,15 +9,433 @@ const EditChargeCodesModal = defineAsyncComponent(() => import('@/components/sta
 
 const sectionTitle = "Charge Code Utilization Dashboard"
 
-// All available charge codes for dropdown selection
-const availableChargeCodes = ref([
-  { id: 1, name: 'Charge Code 1' },
-  { id: 2, name: 'Charge Code 2' },
-  { id: 3, name: 'Charge Code 3' },
-  { id: 4, name: 'Charge Code 4' },
-  { id: 5, name: 'Charge Code 5' },
-  { id: 6, name: 'Charge Code 6' },
-])
+// All available charge codes - will be fetched from API
+const availableChargeCodes = ref([])
+const loadingChargeCodes = ref(false)
+const chargeCodesError = ref(null)
+
+// Personnel data - will be fetched from API
+const personnelData = ref([])
+const loadingPersonnel = ref(false)
+const personnelError = ref(null)
+
+// Contract filter
+const selectedContract = ref('') // For contract filter
+// const availableContracts = computed(() => {
+//   // Get unique contracts from charge codes
+//   const contracts = new Set()
+  
+//   // Add 'All Contracts' option
+//   contracts.add('')
+  
+//   // Add contracts from available charge codes
+//   availableChargeCodes.value.forEach(cc => {
+//     if (cc.contract) {
+//       contracts.add(cc.contract)
+//     }
+//   })
+  
+//   return Array.from(contracts).sort()
+// })
+
+const availableContracts = computed(() => {
+  // Create a map of unique contract-program combinations
+  const contractsMap = new Map()
+  
+  // Add 'All Contracts' option
+  contractsMap.set('', 'All Contracts')
+  
+  // Add contracts from available charge codes with program info
+  availableChargeCodes.value.forEach(cc => {
+    if (cc.contract) {
+      const key = cc.contract
+      const displayName = cc.program 
+        ? `${cc.contract} - ${cc.program}` 
+        : cc.contract
+      
+      contractsMap.set(key, displayName)
+    }
+  })
+  
+  // Convert to array of objects for select dropdown
+  return Array.from(contractsMap).map(([value, text]) => ({ value, text }))
+})
+
+
+// Fetch charge codes from the API
+const fetchChargeCodes = async () => {
+  loadingChargeCodes.value = true
+  chargeCodesError.value = null
+  
+  try {
+    const response = await fetch('http://localhost:3000/api/charge-codes')
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch charge codes: ${response.status}`)
+    }
+    
+    const data = await response.json()
+    
+    // Transform the data into the required format
+    availableChargeCodes.value = data.map(item => ({
+      id: item.id,
+      name: item.charge_code_name || `${item.task_ti} - ${item.project_name}`,
+      startDate: new Date(item.start_date),
+      endDate: new Date(item.end_date),
+      contract: item.contract_number,
+      program: item.program_name
+    }))
+    
+    console.log('Fetched charge codes:', availableChargeCodes.value)
+  } catch (error) {
+    console.error('Error fetching charge codes:', error)
+    chargeCodesError.value = error.message
+    
+    // Fallback to sample data in case of error
+    availableChargeCodes.value = [
+      { id: 1, name: 'Charge Code 1', contract: 'Contract A' },
+      { id: 2, name: 'Charge Code 2', contract: 'Contract B' },
+      { id: 3, name: 'Charge Code 3', contract: 'Contract A' },
+      { id: 4, name: 'Charge Code 4', contract: 'Contract C' },
+      { id: 5, name: 'Charge Code 5', contract: 'Contract B' },
+      { id: 6, name: 'Charge Code 6', contract: 'Contract D' },
+    ]
+  } finally {
+    loadingChargeCodes.value = false
+  }
+}
+
+// Fetch personnel data from the API 
+const fetchPersonnel = async () => {
+  loadingPersonnel.value = true
+  personnelError.value = null
+  
+  try {
+    const response = await fetch('http://localhost:3000/api/personnel')
+    
+    if (!response.ok) {
+      throw new Error(`Failed to fetch personnel: ${response.status}`)
+    }
+    
+    const data = await response.json()
+    
+    // Transform the data into the required format
+    // We'll also need to fetch charge code assignments for each person
+    const personnelWithChargeCodes = await Promise.all(
+      data.map(async person => {
+        // Create full name from first and last name
+        const fullName = `${person.first_name} ${person.last_name}`
+        
+        // Fetch charge code assignments for this person
+        let chargeCodes = []
+        
+        try {
+          const chargeCodeResponse = await fetch(`http://localhost:3000/api/personnel/${person.id}/charge-codes`)
+          
+          if (chargeCodeResponse.ok) {
+            const chargeCodeData = await chargeCodeResponse.json()
+            chargeCodes = chargeCodeData.map(cc => ({
+              id: cc.id,
+              chargeCodeId: cc.line_item_id,
+              name: cc.charge_code_name || `${cc.task_ti} - ${cc.project_name}`,
+              percentage: cc.percentage,
+              startDate: new Date(cc.start_date),
+              endDate: new Date(cc.end_date),
+              contract: cc.contract_number
+            }))
+          }
+        } catch (error) {
+          console.warn(`Could not fetch charge codes for ${fullName}:`, error)
+        }
+        
+        return {
+          id: person.id,
+          name: fullName,
+          email: person.email_address,
+          position: person.position,
+          location: person.location_name,
+          chargeCodes: chargeCodes
+        }
+      })
+    )
+    
+    personnelData.value = personnelWithChargeCodes
+    console.log('Fetched personnel with charge codes:', personnelData.value)
+  } catch (error) {
+    console.error('Error fetching personnel:', error)
+    personnelError.value = error.message
+    
+    // Fallback to sample data in case of error
+    personnelData.value = [
+      { 
+        id: 1,
+        name: 'Sean Watson',
+        email: 'sean.watson@example.com',
+        position: 'Developer',
+        location: 'Remote',
+        chargeCodes: [
+          { 
+            id: 1,
+            chargeCodeId: 101,
+            name: 'Charge Code 1', 
+            percentage: 50,
+            startDate: new Date('2025-01-01'),
+            endDate: new Date('2026-12-31'),
+            contract: 'Contract A'
+          },
+          { 
+            id: 2,
+            chargeCodeId: 102,
+            name: 'Charge Code 2', 
+            percentage: 30,
+            startDate: new Date('2025-03-01'),
+            endDate: new Date('2025-07-31'),
+            contract: 'Contract B'
+          },
+          { 
+            id: 3,
+            chargeCodeId: 103,
+            name: 'Charge Code 3', 
+            percentage: 20,
+            startDate: new Date('2025-01-01'),
+            endDate: new Date('2025-05-31'),
+            contract: 'Contract A'
+          }
+        ]
+      },
+      { 
+        id: 2,
+        name: 'Al Almanza',
+        email: 'al.almanza@example.com',
+        position: 'Project Manager',
+        location: 'Office A',
+        chargeCodes: [
+          { 
+            id: 4,
+            chargeCodeId: 101,
+            name: 'Charge Code 1', 
+            percentage: 40,
+            startDate: new Date('2025-01-01'),
+            endDate: new Date('2025-12-31'),
+            contract: 'Contract A'
+          },
+          { 
+            id: 5,
+            chargeCodeId: 104,
+            name: 'Charge Code 4', 
+            percentage: 60,
+            startDate: new Date('2025-01-01'),
+            endDate: new Date('2025-10-31'),
+            contract: 'Contract C'
+          }
+        ]
+      },
+      { 
+        id: 3,
+        name: 'DeShawn Baldwin',
+        email: 'deshawn.baldwin@example.com',
+        position: 'Designer',
+        location: 'Office B',
+        chargeCodes: [
+          { 
+            id: 6,
+            chargeCodeId: 102,
+            name: 'Charge Code 2', 
+            percentage: 70,
+            startDate: new Date('2025-01-01'),
+            endDate: new Date('2025-12-31'),
+            contract: 'Contract B'
+          },
+          { 
+            id: 7,
+            chargeCodeId: 105,
+            name: 'Charge Code 5', 
+            percentage: 30,
+            startDate: new Date('2025-04-01'),
+            endDate: new Date('2025-09-30'),
+            contract: 'Contract B'
+          }
+        ]
+      },
+      { 
+        id: 4,
+        name: 'Jeff Vaught',
+        email: 'jeff.vaught@example.com',
+        position: 'Engineer',
+        location: 'Office A',
+        chargeCodes: [
+          { 
+            id: 8,
+            chargeCodeId: 103,
+            name: 'Charge Code 3', 
+            percentage: 80,
+            startDate: new Date('2025-02-01'),
+            endDate: new Date('2025-10-31'),
+            contract: 'Contract A'
+          },
+          { 
+            id: 9,
+            chargeCodeId: 105,
+            name: 'Charge Code 5', 
+            percentage: 20,
+            startDate: new Date('2025-01-01'),
+            endDate: new Date('2025-12-31'),
+            contract: 'Contract B'
+          }
+        ]
+      }
+    ]
+  } finally {
+    loadingPersonnel.value = false
+  }
+}
+
+// Function to add a new charge code to a person
+const addChargeCode = async (newChargeCode) => {
+  if (selectedPerson.value) {
+    try {
+      const personIndex = personnelData.value.findIndex(p => p.name === selectedPerson.value.name)
+      
+      if (personIndex !== -1) {
+        const person = personnelData.value[personIndex]
+        
+        // Call API to add charge code
+        // Assuming endpoint: POST /api/personnel/:id/charge-codes
+        const payload = {
+          personnel_id: person.id,
+          line_item_id: newChargeCode.chargeCodeId || newChargeCode.id, // Use chargeCodeId if available
+          charge_code_id: newChargeCode.chargeCodeId || newChargeCode.id, // For backward compatibility
+          percentage: parseInt(newChargeCode.percentage), // Ensure percentage is an integer
+          start_date: newChargeCode.startDate instanceof Date 
+            ? newChargeCode.startDate.toISOString().split('T')[0] 
+            : newChargeCode.startDate,
+          end_date: newChargeCode.endDate instanceof Date 
+            ? newChargeCode.endDate.toISOString().split('T')[0] 
+            : newChargeCode.endDate,
+          contract_number: newChargeCode.contract || '',
+          is_active: true
+        }
+        
+        console.log('Sending payload to API:', payload)
+        
+        // Try to post to API
+        try {
+          const response = await fetch(`http://localhost:3000/api/personnel/${person.id}/charge-codes`, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(payload)
+          })
+          
+          if (!response.ok) {
+            const errorText = await response.text()
+            console.error(`API error details: ${errorText}`)
+            throw new Error(`API error: ${response.status}`)
+          }
+          
+          // Get the updated record from API
+          const result = await response.json()
+          console.log('API response for adding charge code:', result)
+          
+          // Create a new charge code with the returned ID if available
+          const addedChargeCode = {
+            ...newChargeCode,
+            id: result.id || Date.now(), // Use the returned ID or generate a temporary one
+            chargeCodeId: newChargeCode.chargeCodeId || newChargeCode.id
+          }
+          
+          // Update UI
+          personnelData.value[personIndex].chargeCodes.push(addedChargeCode)
+        } catch (error) {
+          console.error('Error adding charge code to API:', error)
+          
+          // For demo/development purposes, still update UI with a temporary ID
+          const tempChargeCode = {
+            ...newChargeCode,
+            id: Date.now() // Generate a temporary ID
+          }
+          personnelData.value[personIndex].chargeCodes.push(tempChargeCode)
+          
+          // Optional: Show user-friendly error
+          alert('Failed to save charge code to server. UI updated with temporary data.')
+        }
+      }
+    } catch (error) {
+      console.error('Error adding charge code:', error)
+    }
+  }
+  activeModals.value.add = false
+}
+
+// Function to update existing charge codes
+const updateChargeCodes = async (updatedChargeCodes) => {
+  if (selectedPerson.value) {
+    try {
+      const personIndex = personnelData.value.findIndex(p => p.name === selectedPerson.value.name)
+      
+      if (personIndex !== -1) {
+        const person = personnelData.value[personIndex]
+        const apiSuccesses = []
+        const apiFailures = []
+        
+        // Call API to update charge codes - each one separately
+        for (const chargeCode of updatedChargeCodes) {
+          const payload = {
+            percentage: chargeCode.percentage,
+            start_date: chargeCode.startDate instanceof Date 
+              ? chargeCode.startDate.toISOString().split('T')[0] 
+              : chargeCode.startDate,
+            end_date: chargeCode.endDate instanceof Date 
+              ? chargeCode.endDate.toISOString().split('T')[0] 
+              : chargeCode.endDate
+          }
+          
+          console.log(`Updating charge code assignment ${chargeCode.id} with:`, payload)
+          
+          try {
+            // We're updating the personnel_charge_codes record
+            const response = await fetch(`http://localhost:3000/api/personnel/${person.id}/charge-codes/${chargeCode.id}`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify(payload)
+            })
+            
+            if (!response.ok) {
+              const errorText = await response.text()
+              throw new Error(`API error (${response.status}): ${errorText}`)
+            }
+            
+            const result = await response.json()
+            console.log(`Updated charge code assignment ${chargeCode.id} via API:`, result)
+            apiSuccesses.push(chargeCode.id)
+          } catch (error) {
+            console.error(`Error updating charge code ${chargeCode.id} via API:`, error)
+            apiFailures.push({ id: chargeCode.id, error: error.message })
+          }
+        }
+        
+        // Update UI with the new charge codes
+        personnelData.value[personIndex].chargeCodes = updatedChargeCodes
+        
+        // Show feedback if there were failures
+        if (apiFailures.length > 0) {
+          console.warn(`Failed to update ${apiFailures.length} charge code assignments`)
+          if (apiFailures.length === updatedChargeCodes.length) {
+            alert(`Failed to update any charge codes. Check the console for details.`)
+          } else {
+            alert(`Updated ${apiSuccesses.length} charge codes, but ${apiFailures.length} failed. UI has been updated anyway.`)
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error updating charge codes:', error)
+    }
+  }
+  activeModals.value.edit = false
+}
 
 // Get current date to determine start year and month
 const currentDate = new Date()
@@ -81,112 +499,48 @@ const isCurrentMonth = (month, year) => {
   return month === currentMonth && year === currentYear
 }
 
-// Add charge code data structure with date ranges and percentages
-const personnelData = ref([
-    { 
-        name: 'Sean Watson',
-        chargeCodes: [
-            { 
-                id: 1,
-                name: 'Charge Code 1', 
-                percentage: 50,
-                startDate: new Date('2025-01-01'),
-                endDate: new Date('2026-12-31')
-            },
-            { 
-                id: 2,
-                name: 'Charge Code 2', 
-                percentage: 30,
-                startDate: new Date('2025-03-01'),
-                endDate: new Date('2025-07-31')
-            },
-            { 
-                id: 3,
-                name: 'Charge Code 3', 
-                percentage: 20,
-                startDate: new Date('2025-01-01'),
-                endDate: new Date('2025-05-31')
-            }
-        ]
-    },
-    { 
-        name: 'Al Almanza',
-        chargeCodes: [
-            { 
-                id: 1,
-                name: 'Charge Code 1', 
-                percentage: 40,
-                startDate: new Date('2025-01-01'),
-                endDate: new Date('2025-12-31')
-            },
-            { 
-                id: 4,
-                name: 'Charge Code 4', 
-                percentage: 60,
-                startDate: new Date('2025-01-01'),
-                endDate: new Date('2025-10-31')
-            }
-        ]
-    },
-    { 
-        name: 'DeShawn Baldwin',
-        chargeCodes: [
-            { 
-                id: 2,
-                name: 'Charge Code 2', 
-                percentage: 70,
-                startDate: new Date('2025-01-01'),
-                endDate: new Date('2025-12-31')
-            },
-            { 
-                id: 5,
-                name: 'Charge Code 5', 
-                percentage: 30,
-                startDate: new Date('2025-04-01'),
-                endDate: new Date('2025-09-30')
-            }
-        ]
-    },
-    { 
-        name: 'Jeff Vaught',
-        chargeCodes: [
-            { 
-                id: 3,
-                name: 'Charge Code 3', 
-                percentage: 80,
-                startDate: new Date('2025-02-01'),
-                endDate: new Date('2025-10-31')
-            },
-            { 
-                id: 5,
-                name: 'Charge Code 5', 
-                percentage: 20,
-                startDate: new Date('2025-01-01'),
-                endDate: new Date('2025-12-31')
-            }
-        ]
-    }
-])
-
 // Search functionality
 const searchQuery = ref('')
+
+// Updated filtered personnel to consider both search query and contract filter
 const filteredPersonnel = computed(() => {
-    if (!searchQuery.value || searchQuery.value.length < 3) {
-        return personnelData.value
-    }
+  let result = personnelData.value
+  
+  // Apply name search filter if query is 3+ characters
+  if (searchQuery.value && searchQuery.value.length >= 3) {
     const query = searchQuery.value.toLowerCase()
-    return personnelData.value.filter(person => 
-        person.name.toLowerCase().includes(query)
+    result = result.filter(person => 
+      person.name.toLowerCase().includes(query)
     )
+  }
+  
+  // Apply contract filter if a contract is selected
+  if (selectedContract.value) {
+    result = result.filter(person => 
+      person.chargeCodes.some(cc => cc.contract === selectedContract.value)
+    )
+  }
+  
+  return result
 })
 
 // Add a reactive state to track which cards are expanded
 const expandedCards = ref({})
 
-// Initialize expandedCards with all personnel set to collapsed
-personnelData.value.forEach(person => {
-    expandedCards.value[person.name] = false
-})
+// Initialize expandedCards when personnel data is loaded
+const initializeExpandedCards = () => {
+  const newExpandedState = {}
+  personnelData.value.forEach(person => {
+    // Preserve existing state if available
+    newExpandedState[person.name] = expandedCards.value[person.name] || false
+  })
+  expandedCards.value = newExpandedState
+}
+
+// Watch for personnel changes to update expanded cards state
+watch(personnelData, () => {
+  initializeExpandedCards()
+}, { deep: true })
 
 // Modal control states
 const activeModals = ref({
@@ -212,28 +566,6 @@ const openEditModal = (person) => {
     activeModals.value.edit = true
 }
 
-// Function to add a new charge code to a person
-const addChargeCode = (newChargeCode) => {
-    if (selectedPerson.value) {
-        const personIndex = personnelData.value.findIndex(p => p.name === selectedPerson.value.name)
-        if (personIndex !== -1) {
-            personnelData.value[personIndex].chargeCodes.push(newChargeCode)
-        }
-    }
-    activeModals.value.add = false
-}
-
-// Function to update existing charge codes
-const updateChargeCodes = (updatedChargeCodes) => {
-    if (selectedPerson.value) {
-        const personIndex = personnelData.value.findIndex(p => p.name === selectedPerson.value.name)
-        if (personIndex !== -1) {
-            personnelData.value[personIndex].chargeCodes = updatedChargeCodes
-        }
-    }
-    activeModals.value.edit = false
-}
-
 // Function to check if a charge code is active for a specific month and year
 const isChargeCodeActive = (chargeCode, date) => {
     return chargeCode.startDate <= date && chargeCode.endDate >= date
@@ -256,11 +588,81 @@ const calculateMonthlyTotal = (person, date) => {
 const formatDate = (date) => {
     return new Intl.DateTimeFormat('en-US', { month: 'short', year: 'numeric' }).format(date)
 }
+
+// Reset filters
+const resetFilters = () => {
+  searchQuery.value = ''
+  selectedContract.value = ''
+}
+
+// Load data when component is mounted
+onMounted(async () => {
+  await fetchChargeCodes()
+  await fetchPersonnel()
+  initializeExpandedCards()
+})
 </script>
 
 <template>
     <SectionGenerator :sectionTitle="sectionTitle" />
     <hr>
+    
+    <!-- Loading states -->
+    <div v-if="loadingPersonnel || loadingChargeCodes" class="notification is-info is-light">
+        <p v-if="loadingPersonnel && loadingChargeCodes">Loading personnel and charge codes...</p>
+        <p v-else-if="loadingPersonnel">Loading personnel data...</p>
+        <p v-else>Loading charge codes...</p>
+    </div>
+    
+    <!-- Error states -->
+    <div v-if="personnelError || chargeCodesError" class="notification is-danger is-light">
+        <p v-if="personnelError">Error loading personnel: {{ personnelError }}</p>
+        <p v-if="chargeCodesError">Error loading charge codes: {{ chargeCodesError }}</p>
+        <p>Using sample data instead.</p>
+    </div>
+    
+    <!-- Filters -->
+    <div class="filters-container mb-4">
+        <div class="columns">
+            <!-- Name search -->
+            <div class="column is-4">
+                <div class="field">
+                    <label class="label">Name Search</label>
+                    <div class="control">
+                        <input 
+                            class="input" 
+                            type="text" 
+                            placeholder="Search personnel..." 
+                            v-model="searchQuery"
+                        >
+                    </div>
+                </div>
+            </div>
+            <!-- Contract filter -->
+            <div class="column is-4">
+                <div class="field">
+                    <label class="label">Contract Filter</label>
+                    <div class="control">
+                        <div class="select is-fullwidth">
+                            <select v-model="selectedContract">
+                                <option v-for="contract in availableContracts" 
+                                        :key="contract.value" 
+                                        :value="contract.value">
+                                    {{ contract.text }}
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <!-- Reset filters button -->
+            <div class="column is-2 is-flex is-align-items-flex-end">
+                <button class="button is-light" @click="resetFilters">
+                    Reset Filters
+                </button>
+            </div>
+        </div>
+    </div>
     
     <!-- Navigation controls -->
     <div class="month-navigation">
@@ -274,20 +676,17 @@ const formatDate = (date) => {
     
     <!-- Header row -->
     <div class="columns is-marginless">
-        <!-- Search input replacing Personnel header -->
+        <!-- Personnel header -->
         <div class="column is-3 is-top-row">
-            <div class="field">
-                <div class="control">
-                    <input 
-                        class="input" 
-                        type="text" 
-                        placeholder="Search names..." 
-                        v-model="searchQuery"
-                    >
-                </div>
+            <div>Personnel</div>
+            <div class="filter-info" v-if="selectedContract || (searchQuery && searchQuery.length >= 3)">
+                <span v-if="selectedContract">
+                    Contract: {{ availableContracts.find(c => c.value === selectedContract)?.text || selectedContract }}
+                </span>
+                <span v-if="selectedContract && (searchQuery && searchQuery.length >= 3)"> | </span>
+                <span v-if="searchQuery && searchQuery.length >= 3">Search: "{{ searchQuery }}"</span>
             </div>
         </div>
-        
         <!-- Month headers with year annotation -->
         <div 
             v-for="(month, index) in visibleMonths"
@@ -298,6 +697,16 @@ const formatDate = (date) => {
             <div>{{ month.name }}</div>
             <div class="year-label">{{ month.year }}</div>
         </div>
+    </div>
+    
+    <!-- No personnel message -->
+    <div v-if="personnelData.length === 0 && !loadingPersonnel" class="notification is-warning">
+        No personnel data available. Please add personnel records first.
+    </div>
+    
+    <!-- No results message when filters are applied -->
+    <div v-else-if="filteredPersonnel.length === 0 && !loadingPersonnel" class="notification is-info">
+        No personnel match the current filters. Try changing your search terms or contract filter.
     </div>
     
     <!-- Personnel rows -->
@@ -347,6 +756,9 @@ const formatDate = (date) => {
                         <div class="date-range">
                             {{ formatDate(chargeCode.startDate) }} - {{ formatDate(chargeCode.endDate) }}
                         </div>
+                        <div class="contract-info" v-if="chargeCode.contract">
+                            {{ chargeCode.contract }}
+                        </div>
                     </div>
                 </div>
                 
@@ -392,6 +804,20 @@ const formatDate = (date) => {
     border-bottom: 1px solid lightgray;
     font-weight: bold;
     padding-bottom: 0.75rem;
+}
+
+.filters-container {
+    background-color: #f8f8f8;
+    padding: 1rem;
+    border-radius: 4px;
+    margin-top: 1rem;
+}
+
+.filter-info {
+    font-size: 0.8rem;
+    color: #4a4a4a;
+    font-weight: normal;
+    margin-top: 0.25rem;
 }
 
 .field {

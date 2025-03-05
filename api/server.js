@@ -754,6 +754,284 @@ app.delete('/api/line-items/:id', async (req, res) => {
   }
 });
 
+// GET charge codes for a specific personnel
+app.get('/api/personnel/:personnelId/charge-codes', async (req, res) => {
+  const personnelId = parseInt(req.params.personnelId);
+  
+  try {
+    const result = await pool.query(`
+      SELECT 
+        pcc.id,
+        pcc.personnel_id,
+        pcc.line_item_id,
+        pcc.percentage,
+        pcc.start_date,
+        pcc.end_date,
+        cli.task_ti,
+        cli.project_name,
+        CONCAT(cli.task_ti, ' - ', cli.project_name) as charge_code_name,
+        wp.contract_number
+      FROM personnel_charge_codes pcc
+      JOIN contract_line_items cli ON pcc.line_item_id = cli.id
+      JOIN workpackages wp ON cli.workpackage_id = wp.id
+      WHERE pcc.personnel_id = $1
+      ORDER BY pcc.start_date DESC
+    `, [personnelId]);
+    
+    console.log(`Sending charge codes for personnel ${personnelId}:`, result.rows);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching personnel charge codes:', err);
+    res.status(500).json({ error: 'Failed to fetch personnel charge codes' });
+  }
+});
+
+// POST create a new charge code assignment for personnel
+app.post('/api/personnel/:personnelId/charge-codes', async (req, res) => {
+  const personnelId = parseInt(req.params.personnelId);
+  const { line_item_id, percentage, start_date, end_date } = req.body;
+  
+  console.log(`Creating charge code for personnel ${personnelId}:`, req.body);
+  
+  // Validate required fields
+  if (!line_item_id || !percentage || !start_date || !end_date) {
+    return res.status(400).json({ error: 'All fields are required' });
+  }
+  
+  // Validate percentage is between 1 and 100
+  if (percentage < 1 || percentage > 100) {
+    return res.status(400).json({ error: 'Percentage must be between 1 and 100' });
+  }
+  
+  try {
+    // Format dates
+    const formattedStartDate = formatDateForDB(start_date);
+    const formattedEndDate = formatDateForDB(end_date);
+    
+    // Validate date range
+    if (new Date(formattedStartDate) > new Date(formattedEndDate)) {
+      return res.status(400).json({ error: 'Start date must be before end date' });
+    }
+    
+    // Begin transaction
+    await pool.query('BEGIN');
+    
+    // Check if line item exists
+    const lineItemCheck = await pool.query(
+      'SELECT id FROM contract_line_items WHERE id = $1',
+      [line_item_id]
+    );
+    
+    if (lineItemCheck.rows.length === 0) {
+      await pool.query('ROLLBACK');
+      return res.status(400).json({ error: 'Line item does not exist' });
+    }
+    
+    // Check if personnel exists
+    const personnelCheck = await pool.query(
+      'SELECT id FROM personnel WHERE id = $1',
+      [personnelId]
+    );
+    
+    if (personnelCheck.rows.length === 0) {
+      await pool.query('ROLLBACK');
+      return res.status(400).json({ error: 'Personnel does not exist' });
+    }
+    
+    // Insert the charge code assignment
+    const result = await pool.query(`
+      INSERT INTO personnel_charge_codes 
+        (personnel_id, line_item_id, percentage, start_date, end_date) 
+      VALUES 
+        ($1, $2, $3, $4, $5) 
+      RETURNING 
+        id, personnel_id, line_item_id, percentage, start_date, end_date
+    `, [
+      personnelId,
+      line_item_id,
+      percentage,
+      formattedStartDate,
+      formattedEndDate
+    ]);
+    
+    // Get the line item details for the response
+    const lineItemResult = await pool.query(`
+      SELECT 
+        cli.task_ti, 
+        cli.project_name,
+        wp.contract_number
+      FROM contract_line_items cli
+      JOIN workpackages wp ON cli.workpackage_id = wp.id
+      WHERE cli.id = $1
+    `, [line_item_id]);
+    
+    // Commit transaction
+    await pool.query('COMMIT');
+    
+    const responseData = {
+      ...result.rows[0],
+      task_ti: lineItemResult.rows[0].task_ti,
+      project_name: lineItemResult.rows[0].project_name,
+      charge_code_name: `${lineItemResult.rows[0].task_ti} - ${lineItemResult.rows[0].project_name}`,
+      contract_number: lineItemResult.rows[0].contract_number
+    };
+    
+    console.log('Created new personnel charge code assignment:', responseData);
+    res.status(201).json(responseData);
+  } catch (err) {
+    // Rollback transaction in case of error
+    await pool.query('ROLLBACK');
+    console.error('Error creating personnel charge code assignment:', err);
+    res.status(500).json({ error: 'Failed to create personnel charge code assignment' });
+  }
+});
+
+// PUT update a charge code assignment
+app.put('/api/personnel/:personnelId/charge-codes/:id', async (req, res) => {
+  const personnelId = parseInt(req.params.personnelId);
+  const id = parseInt(req.params.id);
+  const { percentage, start_date, end_date } = req.body;
+  
+  console.log(`Updating charge code ${id} for personnel ${personnelId}:`, req.body);
+  
+  // Validate required fields
+  if (!percentage || !start_date || !end_date) {
+    return res.status(400).json({ error: 'All fields are required' });
+  }
+  
+  // Validate percentage is between 1 and 100
+  if (percentage < 1 || percentage > 100) {
+    return res.status(400).json({ error: 'Percentage must be between 1 and 100' });
+  }
+  
+  try {
+    // Format dates
+    const formattedStartDate = formatDateForDB(start_date);
+    const formattedEndDate = formatDateForDB(end_date);
+    
+    // Validate date range
+    if (new Date(formattedStartDate) > new Date(formattedEndDate)) {
+      return res.status(400).json({ error: 'Start date must be before end date' });
+    }
+    
+    // Begin transaction
+    await pool.query('BEGIN');
+    
+    // Check if the assignment exists and belongs to the specified personnel
+    const assignmentCheck = await pool.query(
+      'SELECT id FROM personnel_charge_codes WHERE id = $1 AND personnel_id = $2',
+      [id, personnelId]
+    );
+    
+    if (assignmentCheck.rows.length === 0) {
+      await pool.query('ROLLBACK');
+      return res.status(404).json({ error: 'Charge code assignment not found' });
+    }
+    
+    // Update the charge code assignment
+    const result = await pool.query(`
+      UPDATE personnel_charge_codes 
+      SET 
+        percentage = $1, 
+        start_date = $2, 
+        end_date = $3, 
+        updated_at = NOW() 
+      WHERE 
+        id = $4 AND personnel_id = $5 
+      RETURNING 
+        id, personnel_id, line_item_id, percentage, start_date, end_date
+    `, [
+      percentage,
+      formattedStartDate,
+      formattedEndDate,
+      id,
+      personnelId
+    ]);
+    
+    // Get the line item details for the response
+    const lineItemResult = await pool.query(`
+      SELECT 
+        cli.task_ti, 
+        cli.project_name,
+        wp.contract_number
+      FROM personnel_charge_codes pcc
+      JOIN contract_line_items cli ON pcc.line_item_id = cli.id
+      JOIN workpackages wp ON cli.workpackage_id = wp.id
+      WHERE pcc.id = $1
+    `, [id]);
+    
+    // Commit transaction
+    await pool.query('COMMIT');
+    
+    const responseData = {
+      ...result.rows[0],
+      task_ti: lineItemResult.rows[0].task_ti,
+      project_name: lineItemResult.rows[0].project_name,
+      charge_code_name: `${lineItemResult.rows[0].task_ti} - ${lineItemResult.rows[0].project_name}`,
+      contract_number: lineItemResult.rows[0].contract_number
+    };
+    
+    console.log('Updated personnel charge code assignment:', responseData);
+    res.json(responseData);
+  } catch (err) {
+    // Rollback transaction in case of error
+    await pool.query('ROLLBACK');
+    console.error('Error updating personnel charge code assignment:', err);
+    res.status(500).json({ error: 'Failed to update personnel charge code assignment' });
+  }
+});
+
+// DELETE a charge code assignment
+app.delete('/api/personnel/:personnelId/charge-codes/:id', async (req, res) => {
+  const personnelId = parseInt(req.params.personnelId);
+  const id = parseInt(req.params.id);
+  
+  console.log(`Deleting charge code ${id} for personnel ${personnelId}`);
+  
+  try {
+    // Check if the assignment exists and belongs to the specified personnel
+    const result = await pool.query(
+      'DELETE FROM personnel_charge_codes WHERE id = $1 AND personnel_id = $2 RETURNING *',
+      [id, personnelId]
+    );
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Charge code assignment not found' });
+    }
+    
+    console.log('Deleted personnel charge code assignment:', result.rows[0]);
+    res.status(200).json({ message: 'Charge code assignment deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting personnel charge code assignment:', err);
+    res.status(500).json({ error: 'Failed to delete personnel charge code assignment' });
+  }
+});
+
+// GET all charge codes (line items) available for assignment
+app.get('/api/charge-codes', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT 
+        cli.id, 
+        cli.task_ti,
+        cli.project_name,
+        CONCAT(cli.task_ti, ' - ', cli.project_name) as charge_code_name,
+        cli.start_date,
+        cli.end_date,
+        wp.contract_number,
+        wp.program_name
+      FROM contract_line_items cli
+      JOIN workpackages wp ON cli.workpackage_id = wp.id
+      ORDER BY cli.task_ti
+    `);
+    
+    console.log('Sending available charge codes:', result.rows);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching available charge codes:', err);
+    res.status(500).json({ error: 'Failed to fetch available charge codes' });
+  }
+});
 // Start server
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);
