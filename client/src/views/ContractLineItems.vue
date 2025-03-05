@@ -1,5 +1,5 @@
 <script setup>
-import { ref } from 'vue'
+import { ref, onMounted } from 'vue'
 import SectionGenerator from '@/components/SectionGenerator.vue'
 import ButtonSuccess from '@/components/buttons/ButtonSuccess.vue'
 import ButtonInfo from '@/components/buttons/ButtonInfo.vue'
@@ -8,11 +8,34 @@ import ButtonDanger from '@/components/buttons/ButtonDanger.vue'
 const sectionTitle = 'Contract Line Item Admin'
 
 const dynamicSectionVisible = ref(false) // Set to false initially
+const dynamicSectionTitle = ref('')
 
-const contractList = ref([
-    { contractNumber: 'N00024-24-C-6240', programName: 'Nosis', projectNumber: '538111' },
-    { contractNumber: 'G302879', programName: 'APDL', projectNumber: '536606' },
-])
+const contractList = ref([])
+
+// Fetch contracts from the API
+const fetchContracts = async () => {
+  try {
+    const response = await fetch('http://localhost:3000/api/workpackages')
+    if (!response.ok) {
+      throw new Error('Failed to fetch contract data')
+    }
+    const data = await response.json()
+    contractList.value = data.map(item => ({
+      contractNumber: item.contract_number,
+      programName: item.program_name,
+      projectNumber: item.project_number,
+      id: item.id,
+      pm_id: item.pm_id,
+      fa_id: item.fa_id,
+      dpme_id: item.dpme_id
+    }))
+  } catch (error) {
+    console.error('Error fetching contracts:', error)
+  }
+}
+
+// Call the function when component is mounted
+onMounted(fetchContracts)
 
 const selectedOption = ref('')
 const selectedContract = ref(null) // Store the full contract object, not just the string
@@ -25,7 +48,8 @@ const updateSelectedOption = () => {
     
     if (selected) {
         selectedContract.value = selected
-    dynamicSectionVisible.value = true
+        dynamicSectionVisible.value = true
+        dynamicSectionTitle.value = selectedOption.value
     }
 }
 
@@ -122,7 +146,11 @@ const watchSelectedContract = () => {
         </div>
     </div>
     <div v-else>
-
+        <div class="columns">
+            <div class="column">
+                <SectionGenerator :sectionTitle="dynamicSectionTitle" />
+            </div>
+        </div>
         
         <!-- Contract details display -->
         <div class="columns">
