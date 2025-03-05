@@ -33,6 +33,18 @@ const pool = new Pool({
   port: process.env.PGPORT || 5432,
 });
 
+// Helper function to ensure dates are in the correct format for PostgreSQL
+const formatDateForDB = (dateString) => {
+  if (!dateString) return null;
+  
+  // If it's an ISO string with time component, extract just the date part
+  if (typeof dateString === 'string' && dateString.includes('T')) {
+    return dateString.split('T')[0];
+  }
+  
+  return dateString;
+};
+
 // Test database connection
 pool.query('SELECT NOW()', (err, res) => {
   if (err) {
@@ -527,6 +539,218 @@ app.delete('/api/workpackages/:id', async (req, res) => {
   } catch (err) {
     console.error('Error deleting workpackage:', err);
     res.status(500).json({ error: 'Failed to delete workpackage' });
+  }
+});
+
+// *** CONTRACT LINE ITEMS API ENDPOINTS ***
+// Add these to your existing Express app (server.js file)
+
+// GET all line items for a specific workpackage
+app.get('/api/workpackages/:workpackageId/line-items', async (req, res) => {
+  const workpackageId = parseInt(req.params.workpackageId);
+  
+  try {
+    const result = await pool.query(`
+      SELECT 
+        cli.id, 
+        cli.workpackage_id,
+        cli.task_ti,
+        cli.project_task,
+        cli.project_name,
+        cli.start_date,
+        cli.end_date,
+        w.contract_number,
+        w.program_name,
+        w.project_number
+      FROM contract_line_items cli
+      JOIN workpackages w ON cli.workpackage_id = w.id
+      WHERE cli.workpackage_id = $1
+      ORDER BY cli.task_ti
+    `, [workpackageId]);
+    
+    console.log(`Sending line items for workpackage ${workpackageId}:`, result.rows);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching line items:', err);
+    res.status(500).json({ error: 'Failed to fetch line items' });
+  }
+});
+
+// GET line item by ID
+app.get('/api/line-items/:id', async (req, res) => {
+  const id = parseInt(req.params.id);
+  
+  try {
+    const result = await pool.query(`
+      SELECT 
+        cli.id, 
+        cli.workpackage_id,
+        cli.task_ti,
+        cli.project_task,
+        cli.project_name,
+        cli.start_date,
+        cli.end_date,
+        w.contract_number,
+        w.program_name,
+        w.project_number
+      FROM contract_line_items cli
+      JOIN workpackages w ON cli.workpackage_id = w.id
+      WHERE cli.id = $1
+    `, [id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Line item not found' });
+    }
+    
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error('Error fetching line item:', err);
+    res.status(500).json({ error: 'Failed to fetch line item' });
+  }
+});
+
+// POST create new line item
+app.post('/api/line-items', async (req, res) => {
+  const { workpackage_id, task_ti, project_task, project_name, start_date, end_date } = req.body;
+  console.log('Received POST request with body:', req.body);
+  
+  // Validate required fields
+  if (!workpackage_id || !task_ti || !project_task || !project_name || !start_date || !end_date) {
+    return res.status(400).json({ error: 'All fields are required' });
+  }
+  
+  try {
+    // Begin transaction
+    await pool.query('BEGIN');
+
+    // Check if workpackage exists
+    const workpackageCheck = await pool.query(
+      'SELECT id FROM workpackages WHERE id = $1',
+      [workpackage_id]
+    );
+    
+    if (workpackageCheck.rows.length === 0) {
+      await pool.query('ROLLBACK');
+      return res.status(400).json({ error: 'Workpackage does not exist' });
+    }
+
+    // Insert the line item
+    const lineItemResult = await pool.query(
+      `INSERT INTO contract_line_items (workpackage_id, task_ti, project_task, project_name, start_date, end_date) 
+       VALUES ($1, $2, $3, $4, $5, $6) 
+       RETURNING id, workpackage_id, task_ti, project_task, project_name, start_date, end_date`,
+      [
+        workpackage_id,
+        task_ti.trim(),
+        project_task.trim(),
+        project_name.trim(),
+        start_date,
+        end_date
+      ]
+    );
+    
+    // Get the workpackage details for the response
+    const workpackageResult = await pool.query(`
+      SELECT contract_number, program_name, project_number
+      FROM workpackages
+      WHERE id = $1
+    `, [workpackage_id]);
+    
+    // Commit transaction
+    await pool.query('COMMIT');
+    
+    const lineItem = {
+      ...lineItemResult.rows[0],
+      ...workpackageResult.rows[0]
+    };
+    
+    console.log('Created new line item:', lineItem);
+    res.status(201).json(lineItem);
+  } catch (err) {
+    // Rollback transaction in case of error
+    await pool.query('ROLLBACK');
+    console.error('Error creating line item:', err);
+    res.status(500).json({ error: 'Failed to create line item' });
+  }
+});
+
+// PUT update line item
+app.put('/api/line-items/:id', async (req, res) => {
+  const id = parseInt(req.params.id);
+  const { task_ti, project_task, project_name, start_date, end_date } = req.body;
+  console.log(`Updating line item ${id} with:`, req.body);
+  
+  // Validate required fields
+  if (!task_ti || !project_task || !project_name || !start_date || !end_date) {
+    return res.status(400).json({ error: 'All fields are required' });
+  }
+  
+  try {
+    // Begin transaction
+    await pool.query('BEGIN');
+    
+    const lineItemResult = await pool.query(
+      `UPDATE contract_line_items 
+       SET task_ti = $1, project_task = $2, project_name = $3, start_date = $4, end_date = $5, updated_at = NOW() 
+       WHERE id = $6 
+       RETURNING id, workpackage_id, task_ti, project_task, project_name, start_date, end_date`,
+      [
+        task_ti.trim(),
+        project_task.trim(),
+        project_name.trim(),
+        start_date,
+        end_date,
+        id
+      ]
+    );
+    
+    if (lineItemResult.rows.length === 0) {
+      await pool.query('ROLLBACK');
+      return res.status(404).json({ error: 'Line item not found' });
+    }
+    
+    // Get the workpackage details for the response
+    const workpackageResult = await pool.query(`
+      SELECT contract_number, program_name, project_number
+      FROM workpackages
+      WHERE id = $1
+    `, [lineItemResult.rows[0].workpackage_id]);
+    
+    // Commit transaction
+    await pool.query('COMMIT');
+    
+    const lineItem = {
+      ...lineItemResult.rows[0],
+      ...workpackageResult.rows[0]
+    };
+    
+    console.log('Updated line item:', lineItem);
+    res.json(lineItem);
+  } catch (err) {
+    // Rollback transaction in case of error
+    await pool.query('ROLLBACK');
+    console.error('Error updating line item:', err);
+    res.status(500).json({ error: 'Failed to update line item' });
+  }
+});
+
+// DELETE line item
+app.delete('/api/line-items/:id', async (req, res) => {
+  const id = parseInt(req.params.id);
+  console.log(`Deleting line item with ID: ${id}`);
+  
+  try {
+    const result = await pool.query('DELETE FROM contract_line_items WHERE id = $1 RETURNING *', [id]);
+    
+    if (result.rows.length === 0) {
+      return res.status(404).json({ error: 'Line item not found' });
+    }
+    
+    console.log('Deleted line item:', result.rows[0]);
+    res.status(200).json({ message: 'Line item deleted successfully' });
+  } catch (err) {
+    console.error('Error deleting line item:', err);
+    res.status(500).json({ error: 'Failed to delete line item' });
   }
 });
 
