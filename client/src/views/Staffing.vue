@@ -1,3 +1,4 @@
+<!-- Staffing.vue -->
 <script setup>
 import { ref, computed, defineAsyncComponent } from 'vue'
 import SectionGenerator from '@/components/SectionGenerator.vue'
@@ -18,28 +19,44 @@ const availableChargeCodes = ref([
   { id: 6, name: 'Charge Code 6' },
 ])
 
-// Manage viewable date range with scrolling functionality
-const startMonthIndex = ref(0) // Start with January
-const visibleMonthsCount = 10 // Maximum visible months at once
-
-// Generate months and years for 24 months (2 years)
-const allMonths = []
-const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
-
-for (let year = 2025; year <= 2026; year++) {
-  for (let month = 0; month < 12; month++) {
-    allMonths.push({
-      name: monthNames[month],
-      year: year,
-      fullDate: new Date(year, month, 1)
-    })
-  }
-}
-
-// Get current date to highlight current month
+// Get current date to determine start year and month
 const currentDate = new Date()
 const currentYear = currentDate.getFullYear()
 const currentMonth = currentDate.getMonth()
+
+// Generate months dynamically - instead of hard-coding years, we'll generate a fixed number of months
+// starting from current year and extending forward
+const monthNames = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec']
+const numberOfMonthsToGenerate = 48 // 4 years worth of months (adjust as needed)
+const visibleMonthsCount = 9 // Maximum visible months at once
+
+// Generate all months dynamically
+const allMonths = []
+let baseYear = 2025 // Keep sample data starting from 2025
+let baseMonth = 0
+
+for (let i = 0; i < numberOfMonthsToGenerate; i++) {
+  const year = baseYear + Math.floor((baseMonth + i) / 12)
+  const month = (baseMonth + i) % 12
+  
+  allMonths.push({
+    name: monthNames[month],
+    year: year,
+    fullDate: new Date(year, month, 1)
+  })
+}
+
+// Find the index of the current month in allMonths
+let currentMonthIndex = 0
+for (let i = 0; i < allMonths.length; i++) {
+  if (allMonths[i].year === currentYear && monthNames.indexOf(allMonths[i].name) === currentMonth) {
+    currentMonthIndex = i
+    break
+  }
+}
+
+// Set startMonthIndex to the current month
+const startMonthIndex = ref(currentMonthIndex)
 
 // Computed property for visible months
 const visibleMonths = computed(() => {
@@ -151,6 +168,18 @@ const personnelData = ref([
     }
 ])
 
+// Search functionality
+const searchQuery = ref('')
+const filteredPersonnel = computed(() => {
+    if (!searchQuery.value || searchQuery.value.length < 3) {
+        return personnelData.value
+    }
+    const query = searchQuery.value.toLowerCase()
+    return personnelData.value.filter(person => 
+        person.name.toLowerCase().includes(query)
+    )
+})
+
 // Add a reactive state to track which cards are expanded
 const expandedCards = ref({})
 
@@ -245,9 +274,18 @@ const formatDate = (date) => {
     
     <!-- Header row -->
     <div class="columns is-marginless">
-        <!-- Personnel header -->
-        <div class="column is-2 is-top-row has-text-weight-bold">
-            Personnel
+        <!-- Search input replacing Personnel header -->
+        <div class="column is-3 is-top-row">
+            <div class="field">
+                <div class="control">
+                    <input 
+                        class="input" 
+                        type="text" 
+                        placeholder="Search names..." 
+                        v-model="searchQuery"
+                    >
+                </div>
+            </div>
         </div>
         
         <!-- Month headers with year annotation -->
@@ -263,11 +301,11 @@ const formatDate = (date) => {
     </div>
     
     <!-- Personnel rows -->
-    <div v-for="(person, personIndex) in personnelData" :key="personIndex" class="person-row">
+    <div v-for="(person, personIndex) in filteredPersonnel" :key="personIndex" class="person-row">
         <!-- Main row with person name and total percentages -->
         <div class="columns is-marginless">
             <!-- Personnel column with card -->
-            <div class="column is-2">
+            <div class="column is-3">
                 <div class="card">
                     <header class="card-header">
                         <p class="card-header-title">{{ person.name }}</p>
@@ -303,7 +341,7 @@ const formatDate = (date) => {
         <!-- Expanded card content showing individual charge codes -->
         <div v-if="expandedCards[person.name]" class="expanded-content">
             <div v-for="(chargeCode, codeIndex) in person.chargeCodes" :key="codeIndex" class="columns is-marginless">
-                <div class="column is-2 charge-code-details">
+                <div class="column is-3 charge-code-details">
                     <div class="pl-5">
                         {{ chargeCode.name }}: {{ chargeCode.percentage }}%
                         <div class="date-range">
@@ -354,6 +392,10 @@ const formatDate = (date) => {
     border-bottom: 1px solid lightgray;
     font-weight: bold;
     padding-bottom: 0.75rem;
+}
+
+.field {
+    margin-bottom: 0;
 }
 
 .is-month-column {
