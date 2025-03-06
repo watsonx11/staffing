@@ -787,6 +787,35 @@ app.get('/api/upcoming-charge-codes', async (req, res) => {
   }
 });
 
+// GET personnel count by program name
+app.get('/api/personnel-by-contract', async (req, res) => {
+  try {
+    const result = await pool.query(`
+      SELECT 
+        wp.program_name AS contractName,
+        COUNT(DISTINCT pcc.personnel_id) AS count
+      FROM 
+        personnel_charge_codes pcc
+      JOIN 
+        contract_line_items cli ON pcc.line_item_id = cli.id
+      JOIN 
+        workpackages wp ON cli.workpackage_id = wp.id
+      WHERE
+        CURRENT_DATE BETWEEN pcc.start_date AND pcc.end_date
+      GROUP BY 
+        wp.program_name
+      ORDER BY 
+        count DESC
+    `);
+    
+    console.log('Sending personnel count by contract:', result.rows);
+    res.json(result.rows);
+  } catch (err) {
+    console.error('Error fetching personnel count by contract:', err);
+    res.status(500).json({ error: 'Failed to fetch personnel count by contract' });
+  }
+});
+
 // GET charge codes for a specific personnel
 app.get('/api/personnel/:personnelId/charge-codes', async (req, res) => {
   const personnelId = parseInt(req.params.personnelId);

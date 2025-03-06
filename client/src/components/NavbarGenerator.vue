@@ -47,6 +47,13 @@ const managementMenuItems = [
                     </div>
                 </div>
                 <router-link
+                    to="/reports"
+                    class="navbar-item"
+                    :class="{ 'is-selected': route.path === '/reports' }"
+                    >
+                    Reports
+                </router-link>
+                <router-link
                     to="/roadmap"
                     class="navbar-item"
                     :class="{ 'is-selected': route.path === '/roadmap' }"

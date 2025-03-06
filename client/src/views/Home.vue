@@ -16,6 +16,12 @@ const sectionSubtitle = ""
 const personnelCount = ref(0)
 const isLoading = ref(false)
 const errorMessage = ref('')
+
+// New reactive state for personnel by contract
+const personnelByContractCount = ref([])
+const isLoadingContractData = ref(false)
+const contractErrorMessage = ref('')
+
 // Fetch personnel count from the database api
 const fetchPersonnelCount = async () => {
     isLoading.value = true
@@ -40,13 +46,42 @@ const fetchPersonnelCount = async () => {
         isLoading.value = false
     }
 }
-// Fetch personnel on component mount
-onMounted(fetchPersonnelCount)
+
+// Fetch personnel by contract count from the database api
+const fetchPersonnelByContractCount = async () => {
+    isLoadingContractData.value = true
+    contractErrorMessage.value = ''
+    try {
+        const response = await fetch(`${apiAddress}/api/personnel-by-contract`)
+        if (!response.ok) {
+            throw new Error('Failed to fetch personnel by contract data')
+        }
+        const data = await response.json()
+        personnelByContractCount.value = data
+    } catch (error) {
+        console.error('Error fetching personnel by contract count', error)
+        contractErrorMessage.value = 'Failed to load personnel by contract count'
+        toast({
+            message: 'Error loading contract data',
+            type: 'is-danger',
+            dismissible: false,
+            animate: { in: 'fadIn', out: 'fadeOut' },
+        })
+    } finally {
+        isLoadingContractData.value = false
+    }
+}
+
+// Fetch data on component mount
+onMounted(() => {
+    fetchPersonnelCount()
+    fetchPersonnelByContractCount()
+})
 </script>
 <template>
     <SectionGenerator :sectionTitle="sectionTitle" :sectionSubtitle="sectionSubtitle"/>
     <div class="box">
-        <div class="level">
+        <nav id="level" class="level">
             <div class="level-item has-text-centered">
                 <div
                 v-if="isLoading"    
@@ -71,6 +106,49 @@ onMounted(fetchPersonnelCount)
                 <!-- Upcoming charge code count component -->
                 <UpcomingChargeCodeCount />
             </div>
-        </div>
+        </nav>
     </div>
+    <hr>
+    <div v-if="isLoadingContractData" class="has-text-centered my-5">
+        <p class="is-size-5">Loading contract data...</p>
+    </div>
+    <div v-else-if="contractErrorMessage" class="has-text-centered my-5">
+        <p class="is-size-5 has-text-danger">{{ contractErrorMessage }}</p>
+        <button @click="fetchPersonnelByContractCount" class="button is-primary mt-2">
+            Retry
+        </button>
+    </div>
+    <div v-else-if="personnelByContractCount.length === 0" class="has-text-centered my-5">
+        <p class="is-size-5">No contract personnel data available</p>
+    </div>
+    <div v-else class="columns is-multiline">
+        <div 
+            class="column is-3"
+            v-for="(item, index) in personnelByContractCount"
+            :key="index"    
+        >
+            <div class="box has-text-centered">
+                <div class="columns">
+                    <div class="column contract-name-box">
+                        <span class="is-size-5">{{ item.contractname }}</span>
+                    </div>
+                </div>
+                <div class="columns">
+                    <div class="column">
+                        <span class="is-size-1 has-text-weight-bold">{{ item.count }}</span>
+                    </div>
+                </div>
+                <div class="columns">
+                    <div class="column">
+                        <span class="is-size-6 is-italic">Personnel Assigned</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+     </div>
 </template>
+<style lang="css" scoped>
+.contract-name-box {
+    border-bottom: 1px solid lightgray;
+}
+</style>
