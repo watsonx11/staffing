@@ -1,5 +1,5 @@
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, computed } from 'vue'
 import SectionGenerator from '@/components/SectionGenerator.vue'
 import InputfieldGenerator from '@/components/InputfieldGenerator.vue'
 import ReadOnlyInputField from '@/components/input_fields/ReadOnlyInputField.vue'
@@ -25,10 +25,23 @@ const editingId = ref(null)
 const editingName = ref('')
 const isLoading = ref(false)
 const errorMessage = ref('')
+const searchQuery = ref('') // New state for search functionality
 
 // Modal state
 const isDeleteModalActive = ref(false)
 const locationToDelete = ref(null)
+
+// Computed property for filtered locations
+const filteredLocations = computed(() => {
+  if (searchQuery.value.length < 3) {
+    return locations.value
+  }
+  
+  const query = searchQuery.value.toLowerCase().trim()
+  return locations.value.filter(location => 
+    location.name.toLowerCase().includes(query)
+  )
+})
 
 // Fetch locations from the database
 const fetchLocations = async () => {
@@ -210,14 +223,32 @@ onMounted(fetchLocations)
       </div>
     </div>
   </div>
+  
   <SectionGenerator sectionTitle="Current Locations" />
+  
+  <!-- New search field section -->
+  <div class="box">
+    <label class="label">Search Locations:</label>
+    <InputfieldGenerator 
+      placeholder="Enter at least 3 characters to search"
+      :valueText="searchQuery"
+      @update:valueText="(val) => searchQuery = val"
+    />
+    <p class="help" v-if="searchQuery.length > 0 && searchQuery.length < 3">
+      Please enter at least 3 characters to filter locations
+    </p>
+  </div>
   
   <div v-if="isLoading && locations.length === 0" class="has-text-centered">
     <p>Loading locations...</p>
   </div>
   
+  <div v-if="filteredLocations.length === 0 && !isLoading && searchQuery.length >= 3" class="notification is-info">
+    No locations found matching "{{ searchQuery }}". Try a different search term.
+  </div>
+  
   <div class="columns is-multiline">
-    <div class="column is-4" v-for="location in locations" :key="location.id">
+    <div class="column is-4" v-for="location in filteredLocations" :key="location.id">
       <div class="box">
         <div class="columns">
           <div class="column">

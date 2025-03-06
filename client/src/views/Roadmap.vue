@@ -11,6 +11,7 @@ const sectionTitle = "Roadmap"
     <div class="content">
         <ul>
             <li class="complete">Add custom staffing favicon</li>
+            <li class="complete">Add teh abilty to search locations</li>
             <li>Add Engineering tag to Personnel</li>
             <li>Add the ability to not flag a person is > or < 100% based on being supported by other programs</li>
             <li>Ability to bulk edit personnel and a single charge code</li>
@@ -23,6 +24,13 @@ const sectionTitle = "Roadmap"
             <li>Calendar view for understanding people and charge code</li>
             <li>Upcoming staffing changes</li>
             <li>Keycloak integration</li>
+            <li>Add the ability for users to add a request to the roadmap</li>
+            <li>Add the ability for users to be able to rank features on the roadmap (likes?)</li>
+            <li>Update loading masks to use skeletons</li>
+            <li>Add a Focus on current month button in the Staffing page</li>
+            <li>Add Next Month, Over/Under Allocated to Dashboard</li>
+            <li>Ability to quickly focus on the Over/Under Allocated by clicking on the Home page to the Staffing Page?</li>
+
         </ul>
     </div>
 </template>

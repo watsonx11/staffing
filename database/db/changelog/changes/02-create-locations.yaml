@@ -80,12 +80,6 @@ databaseChangeLog:
             columns:
               - column:
                   name: name
-                  value: "Norfolk"
-        - insert:
-            tableName: locations
-            columns:
-              - column:
-                  name: name
                   value: "Manassas"
         - insert:
             tableName: locations
@@ -99,3 +93,9 @@ databaseChangeLog:
               - column:
                   name: name
                   value: "Remote"
+        - insert:
+            tableName: locations
+            columns:
+              - column:
+                  name: name
+                  value: "Chesapeake"

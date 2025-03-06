@@ -89,7 +89,7 @@ databaseChangeLog:
                   value: "Almanza"
               - column:
                   name: email_address
-                  value: "alan.almanza@gd-ms.us"
+                  value: "alan.almanza@gd-ms.com"
               - column:
                   name: location_id
                   valueComputed: "(SELECT id FROM locations WHERE name = 'Pearl Harbor')"
@@ -104,7 +104,7 @@ databaseChangeLog:
                   value: "Baldwin"
               - column:
                   name: email_address
-                  value: "deshawn.baldwin@gd-ms.us"
+                  value: "deshawn.baldwin@gd-ms.com"
               - column:
                   name: location_id
                   valueComputed: "(SELECT id FROM locations WHERE name = 'Pearl Harbor')"
@@ -119,7 +119,7 @@ databaseChangeLog:
                   value: "Do"
               - column:
                   name: email_address
-                  value: "chris.do@gd-ms.us"
+                  value: "chris.do@gd-ms.com"
               - column:
                   name: location_id
                   valueComputed: "(SELECT id FROM locations WHERE name = 'San Diego')"
