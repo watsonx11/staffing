@@ -2,7 +2,7 @@
 <script setup>
 import { ref, computed, defineAsyncComponent, onMounted, watch } from 'vue'
 import SectionGenerator from '@/components/SectionGenerator.vue'
-import usePersonnelData from '@/components/composables/usePersonnelData'
+import usePersonnelData from '@/composables/usePersonnelData'
 
 // Import child components
 const AddChargeCodeModal = defineAsyncComponent(() => import('@/components/staffing/AddChargeCodeModal.vue'))
@@ -20,96 +20,96 @@ const selectedContract = ref('') // For contract filter
 
 // Use the personnel data composable
 const {
-  personnelData,
-  loadingPersonnel,
-  personnelError,
-  searchQuery,
-  filteredPersonnel,
-  expandedCards,
-  fetchPersonnel,
-  initializeExpandedCards,
-  toggleCard,
-  addChargeCode,
-  updateChargeCodes,
-  resetSearch
+    personnelData,
+    loadingPersonnel,
+    personnelError,
+    searchQuery,
+    filteredPersonnel,
+    expandedCards,
+    fetchPersonnel,
+    initializeExpandedCards,
+    toggleCard,
+    addChargeCode,
+    updateChargeCodes,
+    resetSearch
 } = usePersonnelData(selectedContract)
 
 const availableContracts = computed(() => {
   // Create a map of unique contract-program combinations
-  const contractsMap = new Map()
-  
-  // Add 'All Contracts' option
-  contractsMap.set('', 'All Contracts')
-  
-  // Add contracts from available charge codes with program info
-  availableChargeCodes.value.forEach(cc => {
-    if (cc.contract) {
-      const key = cc.contract
-      const displayName = cc.program 
-        ? `${cc.contract} - ${cc.program}` 
-        : cc.contract
-      
-      contractsMap.set(key, displayName)
-    }
-  })
-  
-  // Convert to array of objects for select dropdown
-  return Array.from(contractsMap).map(([value, text]) => ({ value, text }))
+    const contractsMap = new Map()
+    
+    // Add 'All Contracts' option
+    contractsMap.set('', 'All Contracts')
+    
+    // Add contracts from available charge codes with program info
+    availableChargeCodes.value.forEach(cc => {
+        if (cc.contract) {
+        const key = cc.contract
+        const displayName = cc.program 
+            ? `${cc.contract} - ${cc.program}` 
+            : cc.contract
+        
+        contractsMap.set(key, displayName)
+        }
+    })
+    
+    // Convert to array of objects for select dropdown
+    return Array.from(contractsMap).map(([value, text]) => ({ value, text }))
 })
 
 // Fetch charge codes from the API
 const fetchChargeCodes = async () => {
-  loadingChargeCodes.value = true
-  chargeCodesError.value = null
-  
-  try {
-    const response = await fetch('http://localhost:3000/api/charge-codes')
-    
-    if (!response.ok) {
-      throw new Error(`Failed to fetch charge codes: ${response.status}`)
+    loadingChargeCodes.value = true
+    chargeCodesError.value = null
+
+    try {
+        const response = await fetch('http://localhost:3000/api/charge-codes')
+        
+        if (!response.ok) {
+        throw new Error(`Failed to fetch charge codes: ${response.status}`)
+        }
+        
+        const data = await response.json()
+        
+        // Transform the data into the required format
+        availableChargeCodes.value = data.map(item => ({
+        id: item.id,
+        name: item.charge_code_name || `${item.task_ti} - ${item.project_name}`,
+        startDate: new Date(item.start_date),
+        endDate: new Date(item.end_date),
+        contract: item.contract_number,
+        program: item.program_name
+        }))
+        
+        console.log('Fetched charge codes:', availableChargeCodes.value)
+    } catch (error) {
+        console.error('Error fetching charge codes:', error)
+        chargeCodesError.value = error.message
+        
+        // Fallback to sample data in case of error
+        availableChargeCodes.value = [
+        { id: 1, name: 'Charge Code 1', contract: 'Contract A' },
+        { id: 2, name: 'Charge Code 2', contract: 'Contract B' },
+        { id: 3, name: 'Charge Code 3', contract: 'Contract A' },
+        { id: 4, name: 'Charge Code 4', contract: 'Contract C' },
+        { id: 5, name: 'Charge Code 5', contract: 'Contract B' },
+        { id: 6, name: 'Charge Code 6', contract: 'Contract D' },
+        ]
+    } finally {
+        loadingChargeCodes.value = false
     }
-    
-    const data = await response.json()
-    
-    // Transform the data into the required format
-    availableChargeCodes.value = data.map(item => ({
-      id: item.id,
-      name: item.charge_code_name || `${item.task_ti} - ${item.project_name}`,
-      startDate: new Date(item.start_date),
-      endDate: new Date(item.end_date),
-      contract: item.contract_number,
-      program: item.program_name
-    }))
-    
-    console.log('Fetched charge codes:', availableChargeCodes.value)
-  } catch (error) {
-    console.error('Error fetching charge codes:', error)
-    chargeCodesError.value = error.message
-    
-    // Fallback to sample data in case of error
-    availableChargeCodes.value = [
-      { id: 1, name: 'Charge Code 1', contract: 'Contract A' },
-      { id: 2, name: 'Charge Code 2', contract: 'Contract B' },
-      { id: 3, name: 'Charge Code 3', contract: 'Contract A' },
-      { id: 4, name: 'Charge Code 4', contract: 'Contract C' },
-      { id: 5, name: 'Charge Code 5', contract: 'Contract B' },
-      { id: 6, name: 'Charge Code 6', contract: 'Contract D' },
-    ]
-  } finally {
-    loadingChargeCodes.value = false
-  }
 }
 
 // Function to add a new charge code to a person (wrapper function)
 const handleAddChargeCode = async (newChargeCode) => {
-  await addChargeCode(selectedPerson.value, newChargeCode)
-  activeModals.value.add = false
+    await addChargeCode(selectedPerson.value, newChargeCode)
+    activeModals.value.add = false
 }
 
 // Function to update existing charge codes (wrapper function)
 const handleUpdateChargeCodes = async (updatedChargeCodes) => {
-  await updateChargeCodes(selectedPerson.value, updatedChargeCodes)
-  activeModals.value.edit = false
+    await updateChargeCodes(selectedPerson.value, updatedChargeCodes)
+    activeModals.value.edit = false
 }
 
 // Get current date to determine start year and month
@@ -129,23 +129,23 @@ let baseYear = 2025 // Keep sample data starting from 2025
 let baseMonth = 0
 
 for (let i = 0; i < numberOfMonthsToGenerate; i++) {
-  const year = baseYear + Math.floor((baseMonth + i) / 12)
-  const month = (baseMonth + i) % 12
-  
-  allMonths.push({
-    name: monthNames[month],
-    year: year,
-    fullDate: new Date(year, month, 1)
-  })
+    const year = baseYear + Math.floor((baseMonth + i) / 12)
+    const month = (baseMonth + i) % 12
+    
+    allMonths.push({
+        name: monthNames[month],
+        year: year,
+        fullDate: new Date(year, month, 1)
+    })
 }
 
 // Find the index of the current month in allMonths
 let currentMonthIndex = 0
 for (let i = 0; i < allMonths.length; i++) {
-  if (allMonths[i].year === currentYear && monthNames.indexOf(allMonths[i].name) === currentMonth) {
-    currentMonthIndex = i
-    break
-  }
+    if (allMonths[i].year === currentYear && monthNames.indexOf(allMonths[i].name) === currentMonth) {
+        currentMonthIndex = i
+        break
+    }
 }
 
 // Set startMonthIndex to the current month
@@ -153,25 +153,29 @@ const startMonthIndex = ref(currentMonthIndex)
 
 // Computed property for visible months
 const visibleMonths = computed(() => {
-  return allMonths.slice(startMonthIndex.value, startMonthIndex.value + visibleMonthsCount)
+    return allMonths.slice(startMonthIndex.value, startMonthIndex.value + visibleMonthsCount)
 })
 
 // Functions for scrolling months
 const scrollLeft = () => {
-  if (startMonthIndex.value > 0) {
-    startMonthIndex.value--
-  }
+    if (startMonthIndex.value > 0) {
+        startMonthIndex.value--
+    }
+}
+
+const resetCurrentMonth = () => {
+    startMonthIndex.value = currentMonthIndex
 }
 
 const scrollRight = () => {
-  if (startMonthIndex.value < allMonths.length - visibleMonthsCount) {
-    startMonthIndex.value++
-  }
+    if (startMonthIndex.value < allMonths.length - visibleMonthsCount) {
+        startMonthIndex.value++
+    }
 }
 
 // Check if a specific month is the current month
 const isCurrentMonth = (month, year) => {
-  return month === currentMonth && year === currentYear
+    return month === currentMonth && year === currentYear
 }
 
 // Modal control states
@@ -228,15 +232,15 @@ const formatDate = (date) => {
 
 // Reset filters
 const resetFilters = () => {
-  resetSearch()
-  selectedContract.value = ''
+    resetSearch()
+    selectedContract.value = ''
 }
 
 // Load data when component is mounted
 onMounted(async () => {
-  await fetchChargeCodes()
-  await fetchPersonnel()
-  initializeExpandedCards()
+    await fetchChargeCodes()
+    await fetchPersonnel()
+    initializeExpandedCards()
 })
 </script>
 
@@ -306,6 +310,7 @@ onMounted(async () => {
         <button class="button" @click="scrollLeft" :disabled="startMonthIndex === 0">
             ←
         </button>
+        <button class="button is-info is-light" title="Jump to current month" @click="resetCurrentMonth">Current Month</button> 
         <button class="button" @click="scrollRight" :disabled="startMonthIndex >= allMonths.length - visibleMonthsCount">
             →
         </button>

@@ -41,8 +41,13 @@ const chargeCodeIsValid = (code) => {
   )
 }
 
-// Check if all charge codes are valid
+// Check if all charge codes are valid - we will not check for empty array
 const formIsValid = computed(() => {
+  // If there are no charge codes, we allow it - this is the fix
+  if (chargeCodes.value.length === 0) {
+    return true
+  }
+  // Otherwise check if each charge code is valid
   return chargeCodes.value.every(code => chargeCodeIsValid(code))
 })
 
@@ -85,8 +90,8 @@ function closeModal() {
         <button class="delete" aria-label="close" @click="closeModal"></button>
       </header>
       <section class="modal-card-body">
-        <div v-if="chargeCodes.length === 0" class="notification is-warning">
-          This person has no charge codes assigned.
+        <div v-if="chargeCodes.length === 0" class="notification is-info">
+          This person will have no charge codes assigned.
         </div>
         
         <div v-for="(code, index) in chargeCodes" :key="index" class="charge-code-item box">
@@ -154,7 +159,7 @@ function closeModal() {
             <button 
               class="button is-primary" 
               @click="handleSubmit" 
-              :disabled="!formIsValid || chargeCodes.length === 0"
+              :disabled="!formIsValid"
             >
               Save Changes
             </button>

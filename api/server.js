@@ -754,6 +754,39 @@ app.delete('/api/line-items/:id', async (req, res) => {
   }
 });
 
+// IMPORTANT: Add the next endpoint BEFORE the /api/personnel/:personnelId routes
+// to avoid routing conflicts
+// GET count of personnel starting new charge codes in next 14 days
+app.get('/api/upcoming-charge-codes', async (req, res) => {
+  try {
+    // Calculate the date 14 days from now
+    const today = new Date();
+    const fourteenDaysFromNow = new Date(today);
+    fourteenDaysFromNow.setDate(today.getDate() + 14);
+    
+    // Format dates for PostgreSQL
+    const formattedToday = today.toISOString().split('T')[0];
+    const formattedFuture = fourteenDaysFromNow.toISOString().split('T')[0];
+    
+    console.log('Date range for upcoming charge codes:', formattedToday, 'to', formattedFuture);
+    
+    // Simplified query - just get raw count
+    const result = await pool.query(`
+      SELECT COUNT(DISTINCT personnel_id) as count
+      FROM personnel_charge_codes
+      WHERE start_date >= $1::date AND start_date <= $2::date
+    `, [formattedToday, formattedFuture]);
+    
+    const count = parseInt(result.rows[0].count, 10) || 0;
+    console.log('Personnel starting new charge codes in next 14 days:', count);
+    
+    res.json({ count });
+  } catch (err) {
+    console.error('Error fetching upcoming charge code count:', err);
+    res.status(500).json({ error: 'Failed to fetch upcoming charge code count', details: err.message });
+  }
+});
+
 // GET charge codes for a specific personnel
 app.get('/api/personnel/:personnelId/charge-codes', async (req, res) => {
   const personnelId = parseInt(req.params.personnelId);
@@ -1032,6 +1065,97 @@ app.get('/api/charge-codes', async (req, res) => {
     res.status(500).json({ error: 'Failed to fetch available charge codes' });
   }
 });
+
+// REPLACEMENT FOR: Update charge codes in bulk for a personnel
+// Add this new endpoint to your server.js file
+
+// This endpoint handles bulk updates of charge codes for a person,
+// including removing all charge codes if an empty array is provided
+app.put('/api/personnel/:personnelId/charge-codes-bulk', async (req, res) => {
+  const personnelId = parseInt(req.params.personnelId);
+  const { chargeCodes } = req.body;
+  
+  console.log(`Bulk updating charge codes for personnel ${personnelId}:`, chargeCodes);
+  
+  try {
+    // Begin transaction
+    await pool.query('BEGIN');
+    
+    // First, check if the personnel exists
+    const personnelCheck = await pool.query(
+      'SELECT id FROM personnel WHERE id = $1',
+      [personnelId]
+    );
+    
+    if (personnelCheck.rows.length === 0) {
+      await pool.query('ROLLBACK');
+      return res.status(404).json({ error: 'Personnel not found' });
+    }
+    
+    // Delete all existing charge codes for this personnel
+    await pool.query(
+      'DELETE FROM personnel_charge_codes WHERE personnel_id = $1',
+      [personnelId]
+    );
+    
+    // If there are new charge codes to add, insert them
+    const insertedChargeCodes = [];
+    
+    if (Array.isArray(chargeCodes) && chargeCodes.length > 0) {
+      for (const chargeCode of chargeCodes) {
+        // Validate required fields
+        if (!chargeCode.line_item_id || !chargeCode.percentage || 
+            !chargeCode.startDate || !chargeCode.endDate) {
+          await pool.query('ROLLBACK');
+          return res.status(400).json({ 
+            error: 'All charge code fields are required',
+            details: 'Each charge code must have line_item_id, percentage, startDate, and endDate'
+          });
+        }
+        
+        // Format dates
+        const formattedStartDate = formatDateForDB(chargeCode.startDate);
+        const formattedEndDate = formatDateForDB(chargeCode.endDate);
+        
+        // Insert the new charge code
+        const result = await pool.query(`
+          INSERT INTO personnel_charge_codes 
+            (personnel_id, line_item_id, percentage, start_date, end_date) 
+          VALUES 
+            ($1, $2, $3, $4, $5) 
+          RETURNING 
+            id, personnel_id, line_item_id, percentage, start_date, end_date
+        `, [
+          personnelId,
+          chargeCode.line_item_id,
+          chargeCode.percentage,
+          formattedStartDate,
+          formattedEndDate
+        ]);
+        
+        insertedChargeCodes.push(result.rows[0]);
+      }
+    }
+    
+    // Commit transaction
+    await pool.query('COMMIT');
+    
+    console.log(`Successfully updated charge codes for personnel ${personnelId}. Count: ${insertedChargeCodes.length}`);
+    res.status(200).json({
+      message: 'Charge codes updated successfully',
+      chargeCodes: insertedChargeCodes
+    });
+  } catch (err) {
+    // Rollback transaction in case of error
+    await pool.query('ROLLBACK');
+    console.error('Error updating personnel charge codes:', err);
+    res.status(500).json({ 
+      error: 'Failed to update personnel charge codes',
+      details: err.message
+    });
+  }
+});
+
 // Start server
 app.listen(port, () => {
   console.log(`Server running on port ${port}`);

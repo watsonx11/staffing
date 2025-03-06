@@ -325,62 +325,56 @@ export default function usePersonnelData(selectedContractRef) {
         
         if (personIndex !== -1) {
           const person = personnelData.value[personIndex]
-          const apiSuccesses = []
-          const apiFailures = []
           
-          // Call API to update charge codes - each one separately
-          for (const chargeCode of updatedChargeCodes) {
-            const payload = {
-              percentage: chargeCode.percentage,
-              start_date: chargeCode.startDate instanceof Date 
-                ? chargeCode.startDate.toISOString().split('T')[0] 
-                : chargeCode.startDate,
-              end_date: chargeCode.endDate instanceof Date 
-                ? chargeCode.endDate.toISOString().split('T')[0] 
-                : chargeCode.endDate
+          console.log('Updating charge codes for', person.name, ':', updatedChargeCodes)
+          
+          // Format the charge codes for the API
+          const formattedChargeCodes = updatedChargeCodes.map(cc => ({
+            line_item_id: cc.chargeCodeId || cc.line_item_id,
+            percentage: parseInt(cc.percentage),
+            startDate: cc.startDate instanceof Date 
+              ? cc.startDate.toISOString().split('T')[0] 
+              : cc.startDate,
+            endDate: cc.endDate instanceof Date 
+              ? cc.endDate.toISOString().split('T')[0] 
+              : cc.endDate
+          }))
+          
+          try {
+            // Use the new bulk update endpoint
+            const response = await fetch(`http://localhost:3000/api/personnel/${person.id}/charge-codes-bulk`, {
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json'
+              },
+              body: JSON.stringify({ chargeCodes: formattedChargeCodes })
+            })
+            
+            if (!response.ok) {
+              const errorData = await response.json()
+              throw new Error(errorData.error || 'Failed to update charge codes')
             }
             
-            console.log(`Updating charge code assignment ${chargeCode.id} with:`, payload)
+            // Get the response data
+            const responseData = await response.json()
+            console.log('Bulk update response:', responseData)
             
-            try {
-              // We're updating the personnel_charge_codes record
-              const response = await fetch(`http://localhost:3000/api/personnel/${person.id}/charge-codes/${chargeCode.id}`, {
-                method: 'PUT',
-                headers: {
-                  'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(payload)
-              })
-              
-              if (!response.ok) {
-                const errorText = await response.text()
-                throw new Error(`API error (${response.status}): ${errorText}`)
-              }
-              
-              const result = await response.json()
-              console.log(`Updated charge code assignment ${chargeCode.id} via API:`, result)
-              apiSuccesses.push(chargeCode.id)
-            } catch (error) {
-              console.error(`Error updating charge code ${chargeCode.id} via API:`, error)
-              apiFailures.push({ id: chargeCode.id, error: error.message })
-            }
-          }
-          
-          // Update UI with the new charge codes
-          personnelData.value[personIndex].chargeCodes = updatedChargeCodes
-          
-          // Show feedback if there were failures
-          if (apiFailures.length > 0) {
-            console.warn(`Failed to update ${apiFailures.length} charge code assignments`)
-            if (apiFailures.length === updatedChargeCodes.length) {
-              alert(`Failed to update any charge codes. Check the console for details.`)
-            } else {
-              alert(`Updated ${apiSuccesses.length} charge codes, but ${apiFailures.length} failed. UI has been updated anyway.`)
-            }
+            // Update the UI immediately
+            personnelData.value[personIndex].chargeCodes = updatedChargeCodes
+            
+            // Then refresh data to ensure consistency
+            await fetchPersonnel()
+            console.log('Successfully updated charge codes')
+          } catch (error) {
+            console.error('Error updating charge codes via bulk API:', error)
+            
+            // Still update the UI for better user experience, but show a warning
+            personnelData.value[personIndex].chargeCodes = updatedChargeCodes
+            alert(`Failed to save changes to server. UI has been updated but changes may not persist. Error: ${error.message}`)
           }
         }
       } catch (error) {
-        console.error('Error updating charge codes:', error)
+        console.error('Error in updateChargeCodes function:', error)
       }
     }
   }

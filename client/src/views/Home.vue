@@ -2,8 +2,9 @@
 import { ref, onMounted } from 'vue'
 import SectionGenerator from '@/components/SectionGenerator.vue'
 import { toast } from 'bulma-toast'
-import OverallocatedCount from '@/components/home/OverallocatedCount.vue' // Import the new component
-import UnderallocatedCount from '@/components/home/UnderallocatedCount.vue' // Import the new component
+import OverallocatedCount from '@/components/home/OverallocatedCount.vue'
+import UnderallocatedCount from '@/components/home/UnderallocatedCount.vue'
+import UpcomingChargeCodeCount from '@/components/home/UpcomingChargeCodeCount.vue'
 
 const sectionTitle = "MRS Staffing Management"
 const sectionSubtitle = ""
@@ -63,6 +64,10 @@ onMounted(fetchPersonnelCount)
             <div class="level-item has-text-centered">
                 <!-- Under-allocated personnel count component -->
                 <UnderallocatedCount />
+            </div>
+            <div class="level-item has-text-centered">
+                <!-- Upcoming charge code count component -->
+                <UpcomingChargeCodeCount />
             </div>
         </div>
     </div>
