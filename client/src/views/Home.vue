@@ -1,15 +1,17 @@
 <script setup>
 import { ref, onMounted } from 'vue'
-import SectionGenerator from '@/components/SectionGenerator.vue'
 import { toast } from 'bulma-toast'
+import SectionGenerator from '@/components/SectionGenerator.vue'
 import OverallocatedCount from '@/components/home/OverallocatedCount.vue'
 import UnderallocatedCount from '@/components/home/UnderallocatedCount.vue'
 import UpcomingChargeCodeCount from '@/components/home/UpcomingChargeCodeCount.vue'
+import { useConfig } from '@/composables/useConfig'
+
+// Set the url for the database API
+const { apiAddress } = useConfig()
 
 const sectionTitle = "MRS Staffing Management"
 const sectionSubtitle = ""
-// Set the url for the database API
-const apiAddress = 'http://localhost:3000'
 // Reactive state
 const personnelCount = ref(0)
 const isLoading = ref(false)
