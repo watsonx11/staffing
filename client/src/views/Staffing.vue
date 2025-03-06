@@ -21,22 +21,6 @@ const personnelError = ref(null)
 
 // Contract filter
 const selectedContract = ref('') // For contract filter
-// const availableContracts = computed(() => {
-//   // Get unique contracts from charge codes
-//   const contracts = new Set()
-  
-//   // Add 'All Contracts' option
-//   contracts.add('')
-  
-//   // Add contracts from available charge codes
-//   availableChargeCodes.value.forEach(cc => {
-//     if (cc.contract) {
-//       contracts.add(cc.contract)
-//     }
-//   })
-  
-//   return Array.from(contracts).sort()
-// })
 
 const availableContracts = computed(() => {
   // Create a map of unique contract-program combinations
@@ -568,8 +552,6 @@ const openEditModal = (person) => {
 
 // Function to check if a charge code is active for a specific month and year
 const isChargeCodeActive = (chargeCode, date) => {
-    // return chargeCode.startDate <= date && chargeCode.endDate >= date // TODO remove this after testing
-
     // Get the first day of the the month you are checking
     const firstDayOfMonth = new Date(date.getFullYear(), date.getMonth(), 1)
 
