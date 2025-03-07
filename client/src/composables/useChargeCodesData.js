@@ -232,6 +232,48 @@ export default function useChargeCodesData() {
     return Math.max(...dailyPercentages)
   }
 
+  // NEW FUNCTIONS FOR START/END DATE DISPLAY
+
+  // Function to check if a month is the start month for a charge code
+  const isChargeCodeStartMonth = (chargeCode, date) => {
+    // Check if the charge code's start date falls within this month
+    const startMonth = chargeCode.startDate.getMonth()
+    const startYear = chargeCode.startDate.getFullYear()
+    const currentMonth = date.getMonth()
+    const currentYear = date.getFullYear()
+    
+    return startMonth === currentMonth && startYear === currentYear
+  }
+
+  // Function to check if a month is the end month for a charge code
+  const isChargeCodeEndMonth = (chargeCode, date) => {
+    // Check if the charge code's end date falls within this month
+    const endMonth = chargeCode.endDate.getMonth()
+    const endYear = chargeCode.endDate.getFullYear()
+    const currentMonth = date.getMonth()
+    const currentYear = date.getFullYear()
+    
+    return endMonth === currentMonth && endYear === currentYear
+  }
+
+  // Function to check if a charge code starts on first day of month
+  const startsOnFirstDayOfMonth = (chargeCode, date) => {
+    const startDay = chargeCode.startDate.getDate()
+    return startDay === 1
+  }
+
+  // Function to check if a charge code ends on last day of month
+  const endsOnLastDayOfMonth = (chargeCode, date) => {
+    const lastDayOfMonth = new Date(date.getFullYear(), date.getMonth() + 1, 0).getDate()
+    const endDay = chargeCode.endDate.getDate()
+    return endDay === lastDayOfMonth
+  }
+
+  // Function to format just the day number
+  const formatDayOnly = (date) => {
+    return date.getDate()
+  }
+
   return {
     availableChargeCodes,
     loadingChargeCodes,
@@ -242,6 +284,12 @@ export default function useChargeCodesData() {
     getAvailableContracts,
     formatDate,
     hasOverallocation,
-    getMaxDailyAllocation
+    getMaxDailyAllocation,
+    // New helper functions
+    isChargeCodeStartMonth,
+    isChargeCodeEndMonth,
+    startsOnFirstDayOfMonth,
+    endsOnLastDayOfMonth,
+    formatDayOnly
   }
 }

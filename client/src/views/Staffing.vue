@@ -44,7 +44,12 @@ const {
     getAvailableContracts,
     formatDate,
     hasOverallocation,
-    getMaxDailyAllocation
+    getMaxDailyAllocation,
+    isChargeCodeStartMonth,
+    isChargeCodeEndMonth,
+    startsOnFirstDayOfMonth,
+    endsOnLastDayOfMonth,
+    formatDayOnly
 } = useChargeCodesData()
 
 // Computed property for available contracts
@@ -125,43 +130,44 @@ const monthNavigationRef = ref(null)
     <!-- Filters -->
     <div class="filters-container mb-4">
         <div class="columns">
-        <!-- Name search -->
-        <div class="column is-4">
-            <div class="field">
-            <label class="label">Name Search</label>
-            <div class="control">
-                <input 
-                class="input" 
-                type="text" 
-                placeholder="Search personnel..." 
-                v-model="searchQuery"
-                >
-            </div>
-            </div>
-        </div>
-        <!-- Contract filter -->
-        <div class="column is-4">
-            <div class="field">
-            <label class="label">Contract Filter</label>
-            <div class="control">
-                <div class="select is-fullwidth">
-                <select v-model="selectedContract">
-                    <option v-for="contract in availableContracts" 
-                        :key="contract.value" 
-                        :value="contract.value">
-                    {{ contract.text }}
-                    </option>
-                </select>
+            <!-- Name search -->
+            <div class="column is-4">
+                <div class="field">
+                    <label class="label">Name Search</label>
+                    <div class="control">
+                        <input 
+                        class="input" 
+                        type="text" 
+                        placeholder="Search personnel..." 
+                        v-model="searchQuery"
+                        >
+                    </div>
                 </div>
             </div>
+            <!-- Contract filter -->
+            <div class="column is-4">
+                <div class="field">
+                    <label class="label">Contract Filter</label>
+                    <div class="control">
+                        <div class="select is-fullwidth">
+                            <select v-model="selectedContract">
+                                <option v-for="contract in availableContracts" 
+                                    :key="contract.value" 
+                                    :value="contract.value"
+                                >
+                                    {{ contract.text }}
+                                </option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
             </div>
-        </div>
         <!-- Reset filters button -->
-        <div class="column is-2 is-flex is-align-items-flex-end">
-            <button class="button is-light" @click="resetFilters">
-            Reset Filters
-            </button>
-        </div>
+            <div class="column is-2 is-flex is-align-items-flex-end">
+                <button class="button is-light" @click="resetFilters">
+                    Reset Filters
+                </button>
+            </div>
         </div>
     </div>
 
@@ -173,17 +179,17 @@ const monthNavigationRef = ref(null)
     >
         <template #personnel-header>
         <!-- Personnel header -->
-        <div class="column is-3 is-top-row">
-            <div>Personnel</div>
-            <div class="year-label empty-year-label">&nbsp;</div>
-            <div class="filter-info" v-if="selectedContract || (searchQuery && searchQuery.length >= 3)">
-            <span v-if="selectedContract">
-                Contract: {{ availableContracts.find(c => c.value === selectedContract)?.text || selectedContract }}
-            </span>
-            <span v-if="selectedContract && (searchQuery && searchQuery.length >= 3)"> | </span>
-            <span v-if="searchQuery && searchQuery.length >= 3">Search: "{{ searchQuery }}"</span>
+            <div class="column is-3 is-top-row">
+                <div>Personnel</div>
+                <div class="year-label empty-year-label">&nbsp;</div>
+                <div class="filter-info" v-if="selectedContract || (searchQuery && searchQuery.length >= 3)">
+                    <span v-if="selectedContract">
+                        Contract: {{ availableContracts.find(c => c.value === selectedContract)?.text || selectedContract }}
+                    </span>
+                    <span v-if="selectedContract && (searchQuery && searchQuery.length >= 3)"> | </span>
+                    <span v-if="searchQuery && searchQuery.length >= 3">Search: "{{ searchQuery }}"</span>
+                </div>
             </div>
-        </div>
         </template>
     </MonthNavigation>
 
@@ -201,77 +207,93 @@ const monthNavigationRef = ref(null)
     <div v-for="(person, personIndex) in filteredPersonnel" :key="personIndex" class="person-row">
         <!-- Main row with person name and total percentages -->
         <div class="columns is-marginless">
-        <!-- Personnel column with card -->
-        <div class="column is-3">
-            <div class="card">
-            <header class="card-header">
-                <p class="card-header-title">{{ person.name }}</p>
-                <button class="card-header-icon" @click="toggleCard(person.name)">
-                <span class="icon">
-                    {{ expandedCards[person.name] ? '▲' : '▼' }}
-                </span>
-                </button>
-            </header>
-            <footer class="card-footer">
-                <a href="#" class="card-footer-item" @click.prevent="openAddModal(person)">Add</a>
-                <a href="#" class="card-footer-item" @click.prevent="openEditModal(person)">Edit</a>
-            </footer>
+            <!-- Personnel column with card -->
+            <div class="column is-3">
+                <div class="card">
+                    <header class="card-header">
+                        <p class="card-header-title">{{ person.name }}</p>
+                        <button class="card-header-icon" @click="toggleCard(person.name)">
+                            <span class="icon">
+                                {{ expandedCards[person.name] ? '▲' : '▼' }}
+                            </span>
+                        </button>
+                    </header>
+                    <footer class="card-footer">
+                        <a href="#" class="card-footer-item" @click.prevent="openAddModal(person)">Add</a>
+                        <a href="#" class="card-footer-item" @click.prevent="openEditModal(person)">Edit</a>
+                    </footer>
+                </div>
             </div>
-        </div>
 
-        <!-- Monthly total percentage columns -->
-        <div 
-            v-for="(month, index) in visibleMonths"
-            :key="index"
-            class="column is-1 has-text-centered"
-            :class="{ 'current-month-column': monthNavigationRef?.isCurrentMonth(monthNavigationRef.monthNames.indexOf(month.name), month.year) }"
-        >
+            <!-- Monthly total percentage columns -->
             <div 
-            class="percentage-display" 
-            :class="{ 
-              'warning': calculateMonthlyTotal(person, month.fullDate) !== 100,
-              'overallocated': hasOverallocation(person, month.fullDate)
-            }"
-            :title="hasOverallocation(person, month.fullDate) ? 
-              `Warning: Max daily allocation is ${getMaxDailyAllocation(person, month.fullDate)}%` : 
-              ''"
+                v-for="(month, index) in visibleMonths"
+                :key="index"
+                class="column is-1 has-text-centered"
+                :class="{ 'current-month-column': monthNavigationRef?.isCurrentMonth(monthNavigationRef.monthNames.indexOf(month.name), month.year) }"
             >
-              {{ calculateMonthlyTotal(person, month.fullDate) }}%
-              <div v-if="hasOverallocation(person, month.fullDate)" class="overallocation-marker">!</div>
+                <div 
+                    class="percentage-display" 
+                    :class="{ 
+                        'warning': calculateMonthlyTotal(person, month.fullDate) !== 100,
+                        'overallocated': hasOverallocation(person, month.fullDate)
+                    }"
+                    :title="hasOverallocation(person, month.fullDate) ? 
+                        `Warning: Max daily allocation is ${getMaxDailyAllocation(person, month.fullDate)}%` : 
+                        ''"
+                >
+                    {{ calculateMonthlyTotal(person, month.fullDate) }}%
+                    <div v-if="hasOverallocation(person, month.fullDate)" class="overallocation-marker">!</div>
+                </div>
             </div>
-        </div>
         </div>
 
         <!-- Expanded card content showing individual charge codes -->
         <div v-if="expandedCards[person.name]" class="expanded-content">
-        <div v-for="(chargeCode, codeIndex) in person.chargeCodes" :key="codeIndex" class="columns is-marginless">
-            <div class="column is-3 charge-code-details">
-            <div class="pl-5">
-                {{ chargeCode.name }}: {{ chargeCode.percentage }}%
-                <div class="date-range">
-                {{ formatDate(chargeCode.startDate) }} - {{ formatDate(chargeCode.endDate) }}
+            <div v-for="(chargeCode, codeIndex) in person.chargeCodes" :key="codeIndex" class="columns is-marginless">
+                <div class="column is-3 charge-code-details">
+                    <div class="pl-5">
+                        {{ chargeCode.name }}: {{ chargeCode.percentage }}%
+                        <div class="date-range">
+                            {{ formatDate(chargeCode.startDate) }} - {{ formatDate(chargeCode.endDate) }}
+                        </div>
+                        <div class="contract-info" v-if="chargeCode.contract">
+                            {{ chargeCode.contract }}
+                        </div>
+                    </div>
                 </div>
-                <div class="contract-info" v-if="chargeCode.contract">
-                {{ chargeCode.contract }}
+            
+                <!-- Show percentage only if active for this month -->
+                <div 
+                    v-for="(month, index) in visibleMonths"
+                    :key="index"
+                    class="column is-1 has-text-centered"
+                    :class="{ 'current-month-column': monthNavigationRef?.isCurrentMonth(monthNavigationRef.monthNames.indexOf(month.name), month.year) }"
+                >
+                    <div v-if="isChargeCodeActive(chargeCode, month.fullDate)" class="charge-code-percentage">
+                        {{ chargeCode.percentage }}%
+            
+                        <!-- Show start date if this is the start month and doesn't start on the 1st -->
+                        <div 
+                            v-if="isChargeCodeStartMonth(chargeCode, month.fullDate) && !startsOnFirstDayOfMonth(chargeCode, month.fullDate)" 
+                            class="charge-code-date start-date"
+                        >
+                            <span>({{ formatDayOnly(chargeCode.startDate) }})</span>
+                        </div>
+            
+                        <!-- Show end date if this is the end month and doesn't end on the last day -->
+                        <div 
+                            v-if="isChargeCodeEndMonth(chargeCode, month.fullDate) && !endsOnLastDayOfMonth(chargeCode, month.fullDate)" 
+                            class="charge-code-date end-date"
+                        >
+                            <span>({{ formatDayOnly(chargeCode.endDate) }})</span>
+                        </div>
+                    </div>
+                    <div v-else class="charge-code-inactive">
+                        -
+                    </div>
                 </div>
             </div>
-            </div>
-        
-            <!-- Show percentage only if active for this month -->
-            <div 
-            v-for="(month, index) in visibleMonths"
-            :key="index"
-            class="column is-1 has-text-centered"
-            :class="{ 'current-month-column': monthNavigationRef?.isCurrentMonth(monthNavigationRef.monthNames.indexOf(month.name), month.year) }"
-            >
-            <div v-if="isChargeCodeActive(chargeCode, month.fullDate)" class="charge-code-percentage">
-                {{ chargeCode.percentage }}%
-            </div>
-            <div v-else class="charge-code-inactive">
-                -
-            </div>
-            </div>
-        </div>
         </div>
     </div>
     
@@ -292,7 +314,7 @@ const monthNavigationRef = ref(null)
         @close="activeModals.edit = false"
         @update="handleUpdateChargeCodes"
     />
-    </template>
+</template>
 
 <style scoped>
 .is-top-row {
@@ -409,6 +431,20 @@ const monthNavigationRef = ref(null)
 
 .charge-code-inactive {
     color: #aaa;
+}
+
+.charge-code-date {
+    font-size: 0.75rem;
+    color: #555;
+    margin-top: 0.1rem;
+}
+
+.start-date {
+    color: #3273dc; /* Blue to match the percentage */
+}
+
+.end-date {
+    color: #3273dc; /* Blue to match the percentage */
 }
 
 .pl-5 {

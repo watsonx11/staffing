@@ -14,13 +14,15 @@ const sectionTitle = "Roadmap"
             <li>Add custom staffing favicon</li>
             <li>Add the abilty to search locations</li>
             <li>Add a Focus on current month button in the Staffing page</li>
+            <li>Dashboard count of people with up coming charge code changes</li>
+            <li>Added employee by location pi chart to reports</li>
         </ul>
         <hr>
         <p class="title">In Progress Develpment Items</p>
         <ul class="in-progress">
+            <li>See the first day and last day of a persons assigned charge code in the drop down view per code</li>
             <li>How many people are going to start a new charge code in the next rolling 14 days?</li>
                 <ul>
-                    <li>Dashboard count</li>
                     <li>List of people and what charge code</li>
                     <li>?email generation? to simiply informing them?</li>
                 </ul>
@@ -28,6 +30,7 @@ const sectionTitle = "Roadmap"
         <hr>
         <p class="title">Upcoming Development Items</p>
         <ul>
+            <li>GDMS Accounting month/hours vice month/month for staffing</li>
             <li>Quick visual (bar graph?) underneath the percetages for each charge code showing a rough start/end of the charging?</li>
             <li>Ability to quickly focus on the Over/Under Allocated by clicking on the Home page to the Staffing Page?</li>
             <li>Add a expand/collapse all button on the staffing page to easily open/close all personnel cards</li>
