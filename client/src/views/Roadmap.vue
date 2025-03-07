@@ -16,11 +16,12 @@ const sectionTitle = "Roadmap"
             <li>Add a Focus on current month button in the Staffing page</li>
             <li>Dashboard count of people with up coming charge code changes</li>
             <li>Added employee by location pi chart to reports</li>
+            <li>See the first day and last day of a persons assigned charge code in the drop down view per code</li>
+            <li>Fix/Update overlap of dates and percentages on staffing page</li>
         </ul>
         <hr>
         <p class="title">In Progress Develpment Items</p>
         <ul class="in-progress">
-            <li>See the first day and last day of a persons assigned charge code in the drop down view per code</li>
             <li>How many people are going to start a new charge code in the next rolling 14 days?</li>
                 <ul>
                     <li>List of people and what charge code</li>
@@ -38,7 +39,6 @@ const sectionTitle = "Roadmap"
             <li>Searchable charge codes when adding new charge code to person in Staffing Modal</li>
             <li>Add Engineering tag to Personnel</li>
             <li>Add the ability to not flag a person is > or < 100% based on being supported by other programs</li>
-            <li>Fix/Update overlap of dates and percentages on staffing page</li>
             <li>Add FTE/Month calculation based on accounting month</li>
             <li>OIDC integration</li>
             <li>Set active link text to be a different (?gold?) color</li>
