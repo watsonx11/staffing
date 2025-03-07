@@ -2,9 +2,11 @@
 <script setup>
 import { ref, computed, defineAsyncComponent, onMounted, watch } from 'vue'
 import SectionGenerator from '@/components/SectionGenerator.vue'
+import MonthNavigation from '@/components/staffing/MonthNavigation.vue'
+
+// Import Composables
 import usePersonnelData from '@/composables/usePersonnelData'
 import useChargeCodesData from '@/composables/useChargeCodesData'
-import MonthNavigation from '@/components/staffing/MonthNavigation.vue'
 
 // Import child components
 const AddChargeCodeModal = defineAsyncComponent(() => import('@/components/staffing/AddChargeCodeModal.vue'))
@@ -40,7 +42,9 @@ const {
     isChargeCodeActive,
     calculateMonthlyTotal,
     getAvailableContracts,
-    formatDate
+    formatDate,
+    hasOverallocation,
+    getMaxDailyAllocation
 } = useChargeCodesData()
 
 // Computed property for available contracts
@@ -224,9 +228,16 @@ const monthNavigationRef = ref(null)
         >
             <div 
             class="percentage-display" 
-            :class="{ 'warning': calculateMonthlyTotal(person, month.fullDate) !== 100 }"
+            :class="{ 
+              'warning': calculateMonthlyTotal(person, month.fullDate) !== 100,
+              'overallocated': hasOverallocation(person, month.fullDate)
+            }"
+            :title="hasOverallocation(person, month.fullDate) ? 
+              `Warning: Max daily allocation is ${getMaxDailyAllocation(person, month.fullDate)}%` : 
+              ''"
             >
-            {{ calculateMonthlyTotal(person, month.fullDate) }}%
+              {{ calculateMonthlyTotal(person, month.fullDate) }}%
+              <div v-if="hasOverallocation(person, month.fullDate)" class="overallocation-marker">!</div>
             </div>
         </div>
         </div>
@@ -326,10 +337,31 @@ const monthNavigationRef = ref(null)
 .percentage-display {
     padding: 0.5rem 0;
     font-weight: bold;
+    position: relative;
 }
 
 .warning {
-    color: #ff3860;
+    color: #ff9800; /* Orange for non-100% allocation */
+}
+
+.overallocated {
+    color: #ff3860; /* Red for days with >100% allocation */
+    font-weight: bold;
+}
+
+.overallocation-marker {
+    position: absolute;
+    top: 0;
+    right: 8px;
+    font-size: 10px;
+    background-color: #ff3860;
+    color: white;
+    width: 14px;
+    height: 14px;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .person-row {

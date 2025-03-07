@@ -65,17 +65,52 @@ export default function useChargeCodesData() {
     return chargeCode.endDate >= firstDayOfMonth && chargeCode.startDate <= lastDayOfMonth
   }
 
-  // Calculate total percentage per month for each person
+  // Calculate total percentage per month for each person using day-by-day calculation
   const calculateMonthlyTotal = (person, date) => {
-    let total = 0
+    // Get the year and month from the date
+    const year = date.getFullYear()
+    const month = date.getMonth()
     
+    // Get the number of days in the month
+    const daysInMonth = new Date(year, month + 1, 0).getDate()
+    
+    // Create an array to store the percentage for each day of the month
+    const dailyPercentages = Array(daysInMonth).fill(0)
+    
+    // For each charge code, calculate its contribution to each day
     person.chargeCodes.forEach(chargeCode => {
-      if (isChargeCodeActive(chargeCode, date)) {
-        total += chargeCode.percentage
+      // Skip if the charge code isn't active in this month
+      if (!isChargeCodeActive(chargeCode, date)) {
+        return
+      }
+      
+      // Calculate the start day (max of charge code start and month start)
+      const startDate = new Date(Math.max(
+        chargeCode.startDate.getTime(),
+        new Date(year, month, 1).getTime()
+      ))
+      
+      // Calculate the end day (min of charge code end and month end)
+      const endDate = new Date(Math.min(
+        chargeCode.endDate.getTime(),
+        new Date(year, month + 1, 0).getTime()
+      ))
+      
+      // Get the start and end days within the month (0-indexed)
+      const startDay = startDate.getDate() - 1
+      const endDay = endDate.getDate() - 1
+      
+      // Add the percentage to each day in the range
+      for (let day = startDay; day <= endDay; day++) {
+        dailyPercentages[day] += chargeCode.percentage
       }
     })
     
-    return total
+    // Calculate the average percentage across all days in the month
+    const totalPercentage = dailyPercentages.reduce((sum, percentage) => sum + percentage, 0)
+    const averagePercentage = Math.round((totalPercentage / daysInMonth) * 10) / 10 // Rounded to 1 decimal place
+    
+    return averagePercentage
   }
 
   // Function to get available contracts from charge codes
@@ -107,6 +142,96 @@ export default function useChargeCodesData() {
     return new Intl.DateTimeFormat('en-US', { month: 'short', year: 'numeric' }).format(date)
   }
 
+  // Function to check if any day in the month exceeds 100%
+  const hasOverallocation = (person, date) => {
+    // Get the year and month from the date
+    const year = date.getFullYear()
+    const month = date.getMonth()
+    
+    // Get the number of days in the month
+    const daysInMonth = new Date(year, month + 1, 0).getDate()
+    
+    // Create an array to store the percentage for each day of the month
+    const dailyPercentages = Array(daysInMonth).fill(0)
+    
+    // For each charge code, calculate its contribution to each day
+    person.chargeCodes.forEach(chargeCode => {
+      // Skip if the charge code isn't active in this month
+      if (!isChargeCodeActive(chargeCode, date)) {
+        return
+      }
+      
+      // Calculate the start day (max of charge code start and month start)
+      const startDate = new Date(Math.max(
+        chargeCode.startDate.getTime(), 
+        new Date(year, month, 1).getTime()
+      ))
+      
+      // Calculate the end day (min of charge code end and month end)
+      const endDate = new Date(Math.min(
+        chargeCode.endDate.getTime(),
+        new Date(year, month + 1, 0).getTime()
+      ))
+      
+      // Get the start and end days within the month (0-indexed)
+      const startDay = startDate.getDate() - 1
+      const endDay = endDate.getDate() - 1
+      
+      // Add the percentage to each day in the range
+      for (let day = startDay; day <= endDay; day++) {
+        dailyPercentages[day] += chargeCode.percentage
+      }
+    })
+    
+    // Check if any day exceeds 100%
+    return dailyPercentages.some(percentage => percentage > 100)
+  }
+
+  // Get the maximum daily allocation percentage for the month
+  const getMaxDailyAllocation = (person, date) => {
+    // Get the year and month from the date
+    const year = date.getFullYear()
+    const month = date.getMonth()
+    
+    // Get the number of days in the month
+    const daysInMonth = new Date(year, month + 1, 0).getDate()
+    
+    // Create an array to store the percentage for each day of the month
+    const dailyPercentages = Array(daysInMonth).fill(0)
+    
+    // For each charge code, calculate its contribution to each day
+    person.chargeCodes.forEach(chargeCode => {
+      // Skip if the charge code isn't active in this month
+      if (!isChargeCodeActive(chargeCode, date)) {
+        return
+      }
+      
+      // Calculate the start day (max of charge code start and month start)
+      const startDate = new Date(Math.max(
+        chargeCode.startDate.getTime(),
+        new Date(year, month, 1).getTime()
+      ))
+      
+      // Calculate the end day (min of charge code end and month end)
+      const endDate = new Date(Math.min(
+        chargeCode.endDate.getTime(),
+        new Date(year, month + 1, 0).getTime()
+      ))
+      
+      // Get the start and end days within the month (0-indexed)
+      const startDay = startDate.getDate() - 1
+      const endDay = endDate.getDate() - 1
+      
+      // Add the percentage to each day in the range
+      for (let day = startDay; day <= endDay; day++) {
+        dailyPercentages[day] += chargeCode.percentage
+      }
+    })
+    
+    // Return the maximum allocation for any day in the month
+    return Math.max(...dailyPercentages)
+  }
+
   return {
     availableChargeCodes,
     loadingChargeCodes,
@@ -115,6 +240,8 @@ export default function useChargeCodesData() {
     isChargeCodeActive,
     calculateMonthlyTotal,
     getAvailableContracts,
-    formatDate
+    formatDate,
+    hasOverallocation,
+    getMaxDailyAllocation
   }
 }
