@@ -1,7 +1,11 @@
 <script setup>
 import { computed } from 'vue'
-import { useRoute } from 'vue-router'
+import { useRoute, useRouter } from 'vue-router'
+import authService from '@/services/authService'
+
 const route = useRoute()
+const router = useRouter()
+
 // Define navigation bar links
 const managementMenuItems = [
     { path: '/line-items', label: "Line Items" },
@@ -14,6 +18,12 @@ const managementMenuItems = [
 const isManagementActive = computed(() => {
     return managementMenuItems.some(item => item.path === route.path)
 })
+
+// Handle logout
+const handleLogout = async () => {
+    await authService.logout()
+    router.push('/login')
+}
 </script>
 
 <template>
@@ -65,6 +75,17 @@ const isManagementActive = computed(() => {
                     Roadmap
                 </router-link>
             </div>
+            
+            <!-- Add this navbar-end section for logout button -->
+            <div class="navbar-end">
+                <div class="navbar-item">
+                    <div class="buttons">
+                        <button @click="handleLogout" class="button is-link">
+                            Logout
+                        </button>
+                    </div>
+                </div>
+            </div>
         </div>
     </nav>
 </template>
@@ -74,6 +95,11 @@ const isManagementActive = computed(() => {
 .navbar-link.is-active {
     color: gold !important;
     font-weight: bold;;
+}
+
+.navbar-item:hover,
+.navbar-item button:hover {
+    color: #e6c200;
 }
 
 /* Optional: adjust hover state for consistency */

@@ -9,6 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
+    "axios": "^1.8.2",
     "bulma": "^1.0.3",
     "bulma-calendar": "^7.1.1",
     "bulma-toast": "^2.4.4",
