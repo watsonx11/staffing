@@ -1,7 +1,11 @@
 <script setup>
-import { ref, computed, watch, onMounted } from 'vue'
+import { ref, computed, watch, onMounted, defineAsyncComponent } from 'vue'
 import { Chart as ChartJS, CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler } from 'chart.js'
 import { Line } from 'vue-chartjs'
+
+// Import modals as async components
+const AddChargeCodeModal = defineAsyncComponent(() => import('@/components/staffing/AddChargeCodeModal.vue'))
+const EditChargeCodesModal = defineAsyncComponent(() => import('@/components/staffing/EditChargeCodesModal.vue'))
 
 // Register Chart.js components
 ChartJS.register(CategoryScale, LinearScale, PointElement, LineElement, Title, Tooltip, Legend, Filler)
@@ -10,7 +14,8 @@ const props = defineProps({
   // Personnel data
   person: {
     type: Object,
-    required: true
+    required: false,
+    default: null
   },
   // Optional range
   months: {
@@ -38,7 +43,25 @@ const props = defineProps({
   error: {
     type: String,
     default: null
+  },
+  // Required for charge code management
+  availableChargeCodes: {
+    type: Array,
+    default: () => []
+  },
+  availableContracts: {
+    type: Array,
+    default: () => []
   }
+})
+
+// Define emits
+const emit = defineEmits(['addChargeCode', 'updateChargeCodes'])
+
+// Modal control states
+const activeModals = ref({
+  add: false,
+  edit: false
 })
 
 // Create a date range starting from today for the specified number of months
@@ -115,7 +138,7 @@ const generateColors = (count) => {
 const chartData = computed(() => {
   if (!props.person || !props.person.chargeCodes || props.person.chargeCodes.length === 0) {
     return {
-      labels: [],
+      labels: dateRange.value.map(date => formatDate(date)),
       datasets: []
     }
   }
@@ -217,15 +240,43 @@ watch(() => props.title, (newTitle) => {
 // Check if there's data to display
 const hasData = computed(() => {
   return props.person && 
-         props.person.chargeCodes && 
-         props.person.chargeCodes.length > 0 &&
-         chartData.value.datasets.some(dataset => dataset.data.some(value => value > 0))
+    props.person.chargeCodes && 
+    props.person.chargeCodes.length > 0 &&
+    chartData.value.datasets.some(dataset => dataset.data.some(value => value > 0))
 })
+
+// Functions to handle modal actions
+const openAddModal = () => {
+  activeModals.value.add = true
+}
+
+const openEditModal = () => {
+  activeModals.value.edit = true
+}
+
+const handleAddChargeCode = (newChargeCode) => {
+  emit('addChargeCode', props.person, newChargeCode)
+  activeModals.value.add = false
+}
+
+const handleUpdateChargeCodes = (updatedChargeCodes) => {
+  emit('updateChargeCodes', props.person, updatedChargeCodes)
+  activeModals.value.edit = false
+}
 </script>
 
 <template>
   <div class="area-chart-container" :style="{ height: height }">
-    <h2 v-if="title" class="chart-title">{{ title }}</h2>
+    <div class="chart-header">
+      <h2 v-if="title" class="chart-title">{{ title }}</h2>
+      
+      <!-- Add action buttons to match the staffing page -->
+      <div v-if="person && !loading" class="chart-actions">
+        <button class="button is-success is-small is-outlined" @click="openAddModal">Add</button>
+        <button class="button is-info is-small is-outlined" :disabled="!person.chargeCodes || person.chargeCodes.length === 0" @click="openEditModal">Edit</button>
+      </div>
+    </div>
+    
     <div v-if="loading" class="loading-indicator">
       <slot name="loading">Loading data...</slot>
     </div>
@@ -241,6 +292,25 @@ const hasData = computed(() => {
         :options="mergedOptions" 
       />
     </div>
+    
+    <!-- Add Charge Code Modal -->
+    <AddChargeCodeModal 
+      v-if="activeModals.add" 
+      :person="person"
+      :availableChargeCodes="availableChargeCodes"
+      :availableContracts="availableContracts"
+      @close="activeModals.add = false"
+      @add="handleAddChargeCode"
+    />
+
+    <!-- Edit Charge Codes Modal -->
+    <EditChargeCodesModal 
+      v-if="activeModals.edit" 
+      :person="person"
+      :availableChargeCodes="availableChargeCodes"
+      @close="activeModals.edit = false"
+      @update="handleUpdateChargeCodes"
+    />
   </div>
 </template>
 
@@ -255,11 +325,22 @@ const hasData = computed(() => {
   padding: 16px;
 }
 
-.chart-title {
-  margin-top: 0;
+.chart-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
   margin-bottom: 16px;
+}
+
+.chart-title {
+  margin: 0;
   font-size: 1.2rem;
   color: #333;
+}
+
+.chart-actions {
+  display: flex;
+  gap: 8px;
 }
 
 .chart-wrapper {
@@ -281,4 +362,19 @@ const hasData = computed(() => {
 .error-message {
   color: #d32f2f;
 }
+
+/* Button styles matching staffing page
+.button {
+  background-color: #fff;
+  border: 1px solid #dbdbdb;
+  color: #363636;
+  cursor: pointer;
+  padding: 0.25em 0.75em;
+  border-radius: 4px;
+}
+
+.button:hover {
+  background-color: #f5f5f5;
+  border-color: #b5b5b5;
+} */
 </style>

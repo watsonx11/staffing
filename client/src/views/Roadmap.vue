@@ -21,11 +21,11 @@ const sectionTitle = "Roadmap"
             <li>Set active link text to be a different (?gold?) color</li>
             <li>Added additional contract filtering in add charge code modal</li>
             <li>Stacked graph for individuals</li>
+            <li>Add edit/add charge code for person on stacked graph</li>
         </ul>
         <hr>
         <p class="title">In Progress Development Items</p>
         <ul class="in-progress">
-            <li>Add edit/add charge code for person on stacked graph</li>
         </ul>
         <hr>
         <p class="title">Upcoming Development Items</p>

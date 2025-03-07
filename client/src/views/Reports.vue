@@ -1,15 +1,33 @@
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import SectionGenerator from '@/components/SectionGenerator.vue'
 import PieGraphGenerator from '@/components/graphs/PieGraphGenerator.vue'
 import ChargeCodeAreaChart from '@/components/graphs/ChargeCodeAreaChart.vue'
 import usePersonnelData from '@/composables/usePersonnelData'
+import useChargeCodesData from '@/composables/useChargeCodesData'
 
 // Create Section Title
 const sectionTitle = "Reports"
 
-// Use the personnel data composable
-const { personnelData, loadingPersonnel, personnelError, fetchPersonnel } = usePersonnelData(ref(null))
+// Use the personnel data composable with the contract filter
+const contractFilter = ref(null)
+const { 
+  personnelData, 
+  loadingPersonnel, 
+  personnelError, 
+  fetchPersonnel,
+  addChargeCode,
+  updateChargeCodes 
+} = usePersonnelData(contractFilter)
+
+// Use the charge codes data composable
+const {
+  availableChargeCodes,
+  loadingChargeCodes,
+  chargeCodesError,
+  fetchChargeCodes,
+  getAvailableContracts
+} = useChargeCodesData()
 
 // Local state
 const loading = ref(true)
@@ -48,6 +66,9 @@ const availablePersonnel = computed(() => {
     }))
 })
 
+// Available contracts for the modals
+const availableContracts = computed(() => getAvailableContracts())
+
 // Computed property for the currently selected person
 const selectedPerson = computed(() => {
   if (!selectedPersonId.value) return null
@@ -82,15 +103,39 @@ const chartOptions = {
 }
 
 // Combined loading and error states
-const combinedLoading = computed(() => loading.value || loadingPersonnel.value)
-const combinedError = computed(() => error.value || personnelError.value)
+const combinedLoading = computed(() => loading.value || loadingPersonnel.value || loadingChargeCodes.value)
+const combinedError = computed(() => error.value || personnelError.value || chargeCodesError.value)
+
+// Watch for changes in personnel data to update selected person
+watch(personnelData, () => {
+  if (personnelData.value.length > 0 && !selectedPersonId.value) {
+    initializeSelectedPerson()
+  }
+}, { deep: true })
+
+// Handlers for charge code actions
+const handleAddChargeCode = async (person, newChargeCode) => {
+  await addChargeCode(person, newChargeCode)
+}
+
+const handleUpdateChargeCodes = async (person, updatedChargeCodes) => {
+  await updateChargeCodes(person, updatedChargeCodes)
+}
 
 // Load data on component mount
 onMounted(async () => {
   try {
     loading.value = true
+    
+    // Load charge codes first
+    await fetchChargeCodes()
+    
+    // Then load personnel data
     await fetchPersonnel()
-    initializeSelectedPerson() // Set initial selected person
+    
+    // Set initial selected person after data is loaded
+    initializeSelectedPerson()
+    
     loading.value = false
   } catch (err) {
     error.value = `Failed to load data: ${err.message}`
@@ -101,23 +146,6 @@ onMounted(async () => {
 
 <template>
     <SectionGenerator :sectionTitle="sectionTitle" />
-    
-    <!-- Location Distribution Pie Chart -->
-    <div class="report-section">
-        <h3 class="section-title">Staff Distribution</h3>
-        <div class="location-distribution">
-            <PieGraphGenerator
-                :data="locationData"
-                :loading="loading"
-                :error="error"
-                title="Staff by Location"
-                labelKey="location"
-                valueKey="count"
-                height="400px"
-                :options="chartOptions"
-            />
-        </div>
-    </div>
     
     <!-- Charge Code Allocation Chart -->
     <div class="report-section">
@@ -158,17 +186,39 @@ onMounted(async () => {
                 :person="selectedPerson"
                 :months="forecastMonths"
                 :title="chartTitle"
-                :loading="loadingPersonnel"
-                :error="personnelError"
+                :loading="combinedLoading"
+                :error="combinedError"
+                :availableChargeCodes="availableChargeCodes"
+                :availableContracts="availableContracts"
                 height="400px"
+                @addChargeCode="handleAddChargeCode"
+                @updateChargeCodes="handleUpdateChargeCodes"
             >
                 <template #empty>
                     <div class="custom-empty-state">
                         <p>No charge code data available for the selected person and time period.</p>
                         <p>Try selecting a different person or adjusting the forecast period.</p>
+                        <p>Or use the Add button to assign charge codes to this person.</p>
                     </div>
                 </template>
             </ChargeCodeAreaChart>
+        </div>
+    </div>
+
+    <!-- Location Distribution Pie Chart -->
+    <div class="report-section">
+        <h3 class="section-title">Staff Distribution</h3>
+        <div class="location-distribution">
+            <PieGraphGenerator
+                :data="locationData"
+                :loading="loading"
+                :error="error"
+                title="Staff by Location"
+                labelKey="location"
+                valueKey="count"
+                height="400px"
+                :options="chartOptions"
+            />
         </div>
     </div>
 </template>
