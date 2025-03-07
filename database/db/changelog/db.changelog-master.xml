@@ -14,5 +14,6 @@
     <include file="db/changelog/changes/07-create-workpackage-table.yaml"/>
     <include file="db/changelog/changes/08-create-contract-line-items-table.yaml"/>
     <include file="db/changelog/changes/09-create-personnel-charge-codes-table.yaml"/>
+    <include file="db/changelog/changes/10-add-personnel-coverage-percentage-column.yaml"/>
 
 </databaseChangeLog>

@@ -1,0 +1,18 @@
+databaseChangeLog:
+  - changeSet:
+      id: add-coverage-percentage-column
+      author: sean.watson
+      changes:
+        - addColumn:
+            tableName: personnel
+            columns:
+              - column:
+                  name: coverage_percentage
+                  type: INTEGER
+                  defaultValue: 100
+                  constraints:
+                    nullable: false
+      rollback:
+        - dropColumn:
+            tableName: personnel
+            columnName: coverage_percentage

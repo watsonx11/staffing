@@ -104,6 +104,7 @@ export default function usePersonnelData(selectedContractRef) {
             email: person.email_address,
             position: person.position,
             location: person.location_name,
+            coverage_percentage: person.coverage_percentage, 
             chargeCodes: chargeCodes
           }
         })

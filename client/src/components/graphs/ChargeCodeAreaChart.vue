@@ -199,13 +199,6 @@ const defaultOptions = {
         padding: 15
       }
     },
-    title: {
-      display: !!props.title,
-      text: props.title || '',
-      font: {
-        size: 16
-      }
-    },
     tooltip: {
       callbacks: {
         label: (context) => {

@@ -8,7 +8,7 @@ import ModalGenerator from '@/components/ModalGenerator.vue'
 import { toast } from 'bulma-toast'
 
 // Set the url for the database API
-const apiAddress = 'http://localhost:3000' // ${apiAddress}
+const apiAddress = 'http://localhost:3000' // ${apiAddress} // TODO Update from new setup on Home.vue
 
 const positionRadio = [
   "N/A",
@@ -33,6 +33,7 @@ const notes = ref('')
 const selectedPersonnel = ref(null)
 const isEditing = ref(false)
 const selectedPosition = ref('N/A') // Default position selection
+const coveragePercentage = ref(100) // Default coverage percentage
 
 // Modal state
 const isDeleteModalActive = ref(false)
@@ -109,6 +110,18 @@ const handleSubmit = async () => {
     return
   }
   
+  // Validate coverage percentage is a number between 0 and 100
+  const percentageValue = parseInt(coveragePercentage.value)
+  if (isNaN(percentageValue) || percentageValue < 0 || percentageValue > 100) {
+    toast({
+      message: 'Coverage percentage must be a number between 0 and 100',
+      type: 'is-warning',
+      dismissible: false,
+      animate: { in: 'fadeIn', out: 'fadeOut' },
+    })
+    return
+  }
+  
   isSubmitting.value = true
   
   const personData = {
@@ -117,7 +130,8 @@ const handleSubmit = async () => {
     email_address: emailAddress.value,
     location_id: parseInt(selectedLocation.value),
     notes: notes.value,
-    position: selectedPosition.value // Add position to the data payload
+    position: selectedPosition.value, // Add position to the data payload
+    coverage_percentage: percentageValue // Add coverage percentage to the data payload
   }
   
   try {
@@ -186,6 +200,7 @@ const handleEdit = (person) => {
   selectedLocation.value = person.location_id.toString()
   notes.value = person.notes || ''
   selectedPosition.value = person.position || 'N/A' // Set position or default to N/A
+  coveragePercentage.value = person.coverage_percentage !== undefined ? person.coverage_percentage : 100 // Set coverage percentage or default to 100
   
   // Scroll to form
   window.scrollTo({ top: 0, behavior: 'smooth' })
@@ -244,6 +259,7 @@ const resetForm = () => {
   selectedPersonnel.value = null
   isEditing.value = false
   selectedPosition.value = 'N/A' // Reset position to default
+  coveragePercentage.value = 100 // Reset coverage percentage to default
 }
 
 // Handle location selection
@@ -254,6 +270,22 @@ const handleLocationChange = (event) => {
 // Handle position selection
 const handlePositionChange = (position) => {
   selectedPosition.value = position
+}
+
+// Handle percentage input validation
+const validatePercentageInput = (event) => {
+  // Only allow numbers
+  const value = event.target.value.replace(/[^0-9]/g, '')
+  
+  // Ensure the value is between 0 and 100
+  let numValue = parseInt(value, 10)
+  if (isNaN(numValue)) {
+    numValue = 100 // Default to 100 if not a number
+  } else if (numValue > 100) {
+    numValue = 100 // Cap at 100
+  }
+  
+  coveragePercentage.value = numValue
 }
 
 // Fetch data when the component is mounted
@@ -341,6 +373,31 @@ onMounted(() => {
       </div>
       <div class="columns">
         <div class="column is-1"></div>
+        <div class="column is-2">
+          <label class="label">Coverage Percentage:</label>
+          <div class="field has-addons">
+            <div class="control is-expanded">
+              <InputfieldGenerator 
+                type="number"
+                min="0"
+                max="100"
+                :valueText="coveragePercentage.toString()"
+                @update:valueText="(val) => coveragePercentage = val"
+                @input="validatePercentageInput"
+              />
+            </div>
+            <div class="control">
+              <a class="button is-static">
+                %
+              </a>
+            </div>
+          </div>
+          <p class="help">Default is 100%. Used for charge code coverage calculations.</p>
+        </div>
+        <div class="column is-8"></div>
+      </div>
+      <div class="columns">
+        <div class="column is-1"></div>
         <div class="column is-10">
           <label class="label">Notes:</label>
           <textarea 
@@ -389,6 +446,22 @@ onMounted(() => {
               <div v-if="person.position && person.position !== 'N/A'" class="mt-2">
                 <span class="has-text-weight-bold">Position: </span>
                 <span class="tag is-info">{{ person.position }}</span>
+              </div>
+
+              <!-- Display coverage percentage -->
+              <div class="mt-2">
+                <span class="has-text-weight-bold">Coverage: </span>
+                <span 
+                  class="tag" 
+                  :class="{
+                    'is-success': person.coverage_percentage === 100,
+                    'is-light is-success': person.coverage_percentage < 100 && person.coverage_percentage >= 75,
+                    'is-light is-info': person.coverage_percentage < 75 && person.coverage_percentage >= 20,
+                    'is-light': person.coverage_percentage < 10
+                  }"
+                >
+                  {{ person.coverage_percentage || 100 }}%
+                </span>
               </div>
               
               <!-- Display notes if they exist -->

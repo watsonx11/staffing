@@ -161,7 +161,7 @@ app.delete('/api/locations/:id', async (req, res) => {
 app.get('/api/personnel', async (req, res) => {
   try {
     const result = await pool.query(`
-      SELECT p.id, p.first_name, p.last_name, p.email_address, p.location_id, p.notes, p.position, l.name as location_name
+      SELECT p.id, p.first_name, p.last_name, p.email_address, p.location_id, p.notes, p.position, p.coverage_percentage, l.name as location_name
       FROM personnel p
       JOIN locations l ON p.location_id = l.id
       ORDER BY p.last_name, p.first_name
@@ -180,7 +180,7 @@ app.get('/api/personnel/:id', async (req, res) => {
   
   try {
     const result = await pool.query(`
-      SELECT p.id, p.first_name, p.last_name, p.email_address, p.location_id, p.notes, p.position, l.name as location_name
+      SELECT p.id, p.first_name, p.last_name, p.email_address, p.location_id, p.notes, p.position, p.coverage_percentage, l.name as location_name
       FROM personnel p
       JOIN locations l ON p.location_id = l.id
       WHERE p.id = $1
@@ -199,12 +199,18 @@ app.get('/api/personnel/:id', async (req, res) => {
 
 // POST create new personnel
 app.post('/api/personnel', async (req, res) => {
-  const { first_name, last_name, email_address, location_id, notes, position } = req.body;
+  const { first_name, last_name, email_address, location_id, notes, position, coverage_percentage } = req.body;
   console.log('Received POST request with body:', req.body);
   
   // Validate required fields
   if (!first_name || !last_name || !location_id) {
     return res.status(400).json({ error: 'First name, last name, and location are required' });
+  }
+  
+  // Validate coverage percentage
+  const percentageValue = parseInt(coverage_percentage);
+  if (coverage_percentage !== undefined && (isNaN(percentageValue) || percentageValue < 0 || percentageValue > 100)) {
+    return res.status(400).json({ error: 'Coverage percentage must be a number between 0 and 100' });
   }
   
   try {
@@ -221,16 +227,17 @@ app.post('/api/personnel', async (req, res) => {
     }
     
     const result = await pool.query(
-      `INSERT INTO personnel (first_name, last_name, email_address, location_id, notes, position) 
-       VALUES ($1, $2, $3, $4, $5, $6) 
-       RETURNING id, first_name, last_name, email_address, location_id, notes, position`,
+      `INSERT INTO personnel (first_name, last_name, email_address, location_id, notes, position, coverage_percentage) 
+       VALUES ($1, $2, $3, $4, $5, $6, $7) 
+       RETURNING id, first_name, last_name, email_address, location_id, notes, position, coverage_percentage`,
       [
         first_name.trim(),
         last_name.trim(),
         email_address ? email_address.trim() : null,
         location_id,
         notes || null,
-        position || 'N/A'
+        position || 'N/A',
+        percentageValue || 100 // Default to 100 if not provided
       ]
     );
     
@@ -253,15 +260,21 @@ app.post('/api/personnel', async (req, res) => {
   }
 });
 
-// PUT update personnel
+// PUT update personnel  
 app.put('/api/personnel/:id', async (req, res) => {
   const id = parseInt(req.params.id);
-  const { first_name, last_name, email_address, location_id, notes, position } = req.body;
+  const { first_name, last_name, email_address, location_id, notes, position, coverage_percentage } = req.body;
   console.log(`Updating personnel ${id} with:`, req.body);
   
   // Validate required fields
   if (!first_name || !last_name || !location_id) {
     return res.status(400).json({ error: 'First name, last name, and location are required' });
+  }
+  
+  // Validate coverage percentage
+  const percentageValue = parseInt(coverage_percentage);
+  if (coverage_percentage !== undefined && (isNaN(percentageValue) || percentageValue < 0 || percentageValue > 100)) {
+    return res.status(400).json({ error: 'Coverage percentage must be a number between 0 and 100' });
   }
   
   try {
@@ -279,9 +292,9 @@ app.put('/api/personnel/:id', async (req, res) => {
     
     const result = await pool.query(
       `UPDATE personnel 
-       SET first_name = $1, last_name = $2, email_address = $3, location_id = $4, notes = $5, position = $6, updated_at = NOW() 
-       WHERE id = $7 
-       RETURNING id, first_name, last_name, email_address, location_id, notes, position`,
+       SET first_name = $1, last_name = $2, email_address = $3, location_id = $4, notes = $5, position = $6, coverage_percentage = $7, updated_at = NOW() 
+       WHERE id = $8 
+       RETURNING id, first_name, last_name, email_address, location_id, notes, position, coverage_percentage`,
       [
         first_name.trim(),
         last_name.trim(),
@@ -289,6 +302,7 @@ app.put('/api/personnel/:id', async (req, res) => {
         location_id,
         notes || null,
         position || 'N/A',
+        percentageValue || 100, // Default to 100 if not provided
         id
       ]
     );

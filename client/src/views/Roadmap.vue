@@ -22,6 +22,7 @@ const sectionTitle = "Roadmap"
             <li>Added additional contract filtering in add charge code modal</li>
             <li>Stacked graph for individuals</li>
             <li>Add edit/add charge code for person on stacked graph</li>
+            <li>Added login page, and intial OIDC auth capability</li>
         </ul>
         <hr>
         <p class="title">In Progress Development Items</p>

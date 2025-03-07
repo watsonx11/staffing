@@ -211,7 +211,12 @@ const monthNavigationRef = ref(null)
             <div class="column is-3">
                 <div class="card">
                     <header class="card-header">
-                        <p class="card-header-title">{{ person.name }}</p>
+                        <p class="card-header-title">
+                            {{ person.name }}&nbsp;
+                            <span v-if="person.coverage_percentage !== undefined">
+                                ({{ person.coverage_percentage || 100 }}%)
+                            </span>
+                        </p>
                         <button class="card-header-icon" @click="toggleCard(person.name)">
                             <span class="icon">
                                 {{ expandedCards[person.name] ? '▲' : '▼' }}
@@ -385,6 +390,13 @@ const monthNavigationRef = ref(null)
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+.coverage-indicator {
+    font-size: 0.9rem;
+    font-weight: normal;
+    color: #666;
+    margin-left: 0.5rem;
 }
 
 .person-row {

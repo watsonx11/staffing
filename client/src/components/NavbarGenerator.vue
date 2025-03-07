@@ -44,6 +44,13 @@ const handleLogout = async () => {
                     >
                     Staffing
                 </router-link>
+                <router-link
+                    to="/reports"
+                    class="navbar-item"
+                    :class="{ 'is-active': route.path === '/reports' }"
+                    >
+                    Reports
+                </router-link>
                 <div class="navbar-item has-dropdown is-hoverable">
                     <a class="navbar-link" :class="{ 'is-active': isManagementActive }">
                         Management
@@ -60,13 +67,6 @@ const handleLogout = async () => {
                         </router-link>
                     </div>
                 </div>
-                <router-link
-                    to="/reports"
-                    class="navbar-item"
-                    :class="{ 'is-active': route.path === '/reports' }"
-                    >
-                    Reports
-                </router-link>
                 <router-link
                     to="/roadmap"
                     class="navbar-item"
