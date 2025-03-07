@@ -302,6 +302,7 @@ const monthNavigationRef = ref(null)
         v-if="activeModals.add" 
         :person="selectedPerson"
         :availableChargeCodes="availableChargeCodes"
+        :availableContracts="availableContracts"
         @close="activeModals.add = false"
         @add="handleAddChargeCode"
     />

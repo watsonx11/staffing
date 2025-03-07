@@ -4,7 +4,11 @@ import { ref, computed, watch } from 'vue'
 
 const props = defineProps({
   person: Object,
-  availableChargeCodes: Array
+  availableChargeCodes: Array,
+  availableContracts: {
+    type: Array,
+    default: () => []
+  }
 })
 
 const emit = defineEmits(['close', 'add'])
@@ -15,6 +19,26 @@ const formState = ref({
   percentage: 0,
   startDate: '',
   endDate: ''
+})
+
+// Contract filter
+const selectedContract = ref('all')
+
+// Use the contracts passed from parent with the "All Contracts" option
+const contractOptions = computed(() => {
+  // Check if an "All Contracts" option is already included in the available contracts
+  const hasAllOption = props.availableContracts.some(contract => contract.value === 'all');
+  
+  if (hasAllOption) {
+    // If "All Contracts" is already included, just use the array as is
+    return props.availableContracts;
+  } else {
+    // Otherwise, add the "All Contracts" option at the beginning
+    return [
+      { value: 'all', text: 'All Contracts' },
+      ...props.availableContracts
+    ];
+  }
 })
 
 // Computed properties
@@ -28,7 +52,14 @@ const availableOptions = computed(() => {
   if (!props.person) return []
   
   const personChargeCodeIds = props.person.chargeCodes.map(code => code.id)
-  return props.availableChargeCodes.filter(code => !personChargeCodeIds.includes(code.id))
+  let filteredCodes = props.availableChargeCodes.filter(code => !personChargeCodeIds.includes(code.id))
+  
+  // Apply contract filter if not set to "all"
+  if (selectedContract.value !== 'all') {
+    filteredCodes = filteredCodes.filter(code => code.contract === selectedContract.value)
+  }
+  
+  return filteredCodes
 })
 
 // Initialize default dates
@@ -90,6 +121,20 @@ function closeModal() {
         <button class="delete" aria-label="close" @click="closeModal"></button>
       </header>
       <section class="modal-card-body">
+        <!-- Contract Filter -->
+        <div class="field">
+          <label class="label">Filter by Contract</label>
+          <div class="control">
+            <div class="select is-fullwidth">
+              <select v-model="selectedContract">
+                <option v-for="contract in contractOptions" :key="contract.value" :value="contract.value">
+                  {{ contract.text }}
+                </option>
+              </select>
+            </div>
+          </div>
+        </div>
+        
         <div class="field">
           <label class="label">Charge Code</label>
           <div class="control">
@@ -97,13 +142,14 @@ function closeModal() {
               <select v-model="formState.chargeCodeId">
                 <option value="" disabled>Select a charge code</option>
                 <option v-for="code in availableOptions" :key="code.id" :value="code.id">
-                  {{ code.name }}
+                  {{ code.name }}{{ code.contract ? ` (${code.contract})` : '' }}
                 </option>
               </select>
             </div>
           </div>
           <p v-if="availableOptions.length === 0" class="help is-danger">
             No more charge codes available to add
+            <span v-if="selectedContract !== 'all'"> for the selected contract</span>
           </p>
         </div>
         

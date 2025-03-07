@@ -18,6 +18,7 @@ const sectionTitle = "Roadmap"
             <li>Added employee by location pi chart to reports</li>
             <li>See the first day and last day of a persons assigned charge code in the drop down view per code</li>
             <li>Fix/Update overlap of dates and percentages on staffing page</li>
+            <li>Set active link text to be a different (?gold?) color</li>
         </ul>
         <hr>
         <p class="title">In Progress Develpment Items</p>
@@ -41,7 +42,6 @@ const sectionTitle = "Roadmap"
             <li>Add the ability to not flag a person is > or < 100% based on being supported by other programs</li>
             <li>Add FTE/Month calculation based on accounting month</li>
             <li>OIDC integration</li>
-            <li>Set active link text to be a different (?gold?) color</li>
             <li>Ability to bulk edit personnel and a single charge code</li>
             <li>Ability to bulk edit personnel and a charge code percentage</li>
             <li>Ability to bulk edit personnel and a charge code end date</li>

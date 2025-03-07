@@ -1,7 +1,7 @@
 <script setup>
+import { computed } from 'vue'
 import { useRoute } from 'vue-router'
 const route = useRoute()
-
 // Define navigation bar links
 const managementMenuItems = [
     { path: '/line-items', label: "Line Items" },
@@ -10,6 +10,10 @@ const managementMenuItems = [
     { path: '/locations', label: "Locations" },
 ]
 
+// Check if any of the management items are active
+const isManagementActive = computed(() => {
+    return managementMenuItems.some(item => item.path === route.path)
+})
 </script>
 
 <template>
@@ -19,19 +23,19 @@ const managementMenuItems = [
                 <router-link
                     to="/"
                     class="navbar-item"
-                    :class="{ 'is-selected': route.path === '/' }"
+                    :class="{ 'is-active': route.path === '/' }"
                     >
                     Home
                 </router-link>
                 <router-link
                     to="/staffing"
                     class="navbar-item"
-                    :class="{ 'is-selected': route.path === '/staffing' }"
+                    :class="{ 'is-active': route.path === '/staffing' }"
                     >
                     Staffing
                 </router-link>
                 <div class="navbar-item has-dropdown is-hoverable">
-                    <a class="navbar-link">
+                    <a class="navbar-link" :class="{ 'is-active': isManagementActive }">
                         Management
                     </a>
                     <div class="navbar-dropdown">
@@ -49,14 +53,14 @@ const managementMenuItems = [
                 <router-link
                     to="/reports"
                     class="navbar-item"
-                    :class="{ 'is-selected': route.path === '/reports' }"
+                    :class="{ 'is-active': route.path === '/reports' }"
                     >
                     Reports
                 </router-link>
                 <router-link
                     to="/roadmap"
                     class="navbar-item"
-                    :class="{ 'is-selected': route.path === '/roadmap' }"
+                    :class="{ 'is-active': route.path === '/roadmap' }"
                     >
                     Roadmap
                 </router-link>
@@ -64,3 +68,17 @@ const managementMenuItems = [
         </div>
     </nav>
 </template>
+
+<style scoped>
+.navbar-item.is-active,
+.navbar-link.is-active {
+    color: gold !important;
+    font-weight: bold;;
+}
+
+/* Optional: adjust hover state for consistency */
+.navbar-item.is-active:hover,
+.navbar-link.is-active:hover {
+    color: #e6c200 !important; /* Slightly darker gold on hover */
+}
+</style>
