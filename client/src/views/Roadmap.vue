@@ -19,25 +19,27 @@ const sectionTitle = "Roadmap"
             <li>See the first day and last day of a persons assigned charge code in the drop down view per code</li>
             <li>Fix/Update overlap of dates and percentages on staffing page</li>
             <li>Set active link text to be a different (?gold?) color</li>
+            <li>Added additional contract filtering in add charge code modal</li>
+            <li>Stacked graph for individuals</li>
         </ul>
         <hr>
-        <p class="title">In Progress Develpment Items</p>
+        <p class="title">In Progress Development Items</p>
         <ul class="in-progress">
+            <li>Add edit/add charge code for person on stacked graph</li>
+        </ul>
+        <hr>
+        <p class="title">Upcoming Development Items</p>
+        <ul>
             <li>How many people are going to start a new charge code in the next rolling 14 days?</li>
                 <ul>
                     <li>List of people and what charge code</li>
                     <li>?email generation? to simiply informing them?</li>
                 </ul>
-        </ul>
-        <hr>
-        <p class="title">Upcoming Development Items</p>
-        <ul>
             <li>GDMS Accounting month/hours vice month/month for staffing</li>
             <li>Quick visual (bar graph?) underneath the percetages for each charge code showing a rough start/end of the charging?</li>
             <li>Ability to quickly focus on the Over/Under Allocated by clicking on the Home page to the Staffing Page?</li>
             <li>Add a expand/collapse all button on the staffing page to easily open/close all personnel cards</li>
             <li>Change default date to +1 month vice +1year in charge code add modal</li>
-            <li>Searchable charge codes when adding new charge code to person in Staffing Modal</li>
             <li>Add Engineering tag to Personnel</li>
             <li>Add the ability to not flag a person is > or < 100% based on being supported by other programs</li>
             <li>Add FTE/Month calculation based on accounting month</li>
@@ -47,7 +49,6 @@ const sectionTitle = "Roadmap"
             <li>Ability to bulk edit personnel and a charge code end date</li>
             <li>Flag for charge code is assigned to person and is > < POP</li>
             <li>Add Font Awesome icons</li>
-            <li>Stacked graph for individuals</li>
             <li>Audit log for each page...</li>
             <li>Calendar view for understanding people and charge codes</li>
             <li>Add the ability for users to add a request to the roadmap</li>

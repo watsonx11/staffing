@@ -21,24 +21,12 @@ const formState = ref({
   endDate: ''
 })
 
-// Contract filter
-const selectedContract = ref('all')
+// Contract filter - default to empty string to match parent component
+const selectedContract = ref('')
 
-// Use the contracts passed from parent with the "All Contracts" option
+// Just use the available contracts directly from props
 const contractOptions = computed(() => {
-  // Check if an "All Contracts" option is already included in the available contracts
-  const hasAllOption = props.availableContracts.some(contract => contract.value === 'all');
-  
-  if (hasAllOption) {
-    // If "All Contracts" is already included, just use the array as is
-    return props.availableContracts;
-  } else {
-    // Otherwise, add the "All Contracts" option at the beginning
-    return [
-      { value: 'all', text: 'All Contracts' },
-      ...props.availableContracts
-    ];
-  }
+  return props.availableContracts;
 })
 
 // Computed properties
@@ -54,8 +42,8 @@ const availableOptions = computed(() => {
   const personChargeCodeIds = props.person.chargeCodes.map(code => code.id)
   let filteredCodes = props.availableChargeCodes.filter(code => !personChargeCodeIds.includes(code.id))
   
-  // Apply contract filter if not set to "all"
-  if (selectedContract.value !== 'all') {
+  // Apply contract filter if not empty (empty string is "All Contracts")
+  if (selectedContract.value) {
     filteredCodes = filteredCodes.filter(code => code.contract === selectedContract.value)
   }
   
@@ -149,7 +137,7 @@ function closeModal() {
           </div>
           <p v-if="availableOptions.length === 0" class="help is-danger">
             No more charge codes available to add
-            <span v-if="selectedContract !== 'all'"> for the selected contract</span>
+            <span v-if="selectedContract"> for the selected contract</span>
           </p>
         </div>
         
