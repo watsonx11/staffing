@@ -1,9 +1,10 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
+import { useConfig } from '@/composables/useConfig'
 import { toast } from 'bulma-toast'
 
 // Set the url for the database API
-const apiAddress = 'http://localhost:3000'
+const { apiAddress } = useConfig()
 
 // Reactive state
 const personnel = ref([])

@@ -1,8 +1,11 @@
 <script setup>
 import { ref, onMounted } from 'vue'
 import { toast } from 'bulma-toast'
+import { useConfig } from '@/composables/useConfig'
 
-const apiAddress = 'http://localhost:3000'
+// Set the url for the database API
+const { apiAddress } = useConfig()
+
 const upcomingCount = ref(0)
 const isLoading = ref(false)
 const errorMessage = ref('')

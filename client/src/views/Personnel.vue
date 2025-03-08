@@ -1,14 +1,15 @@
 <script setup>
 import { ref, onMounted } from 'vue'
+import { toast } from 'bulma-toast'
+import { useConfig } from '@/composables/useConfig'
 import SectionGenerator from '@/components/SectionGenerator.vue'
 import InputfieldGenerator from '@/components/InputfieldGenerator.vue'
 import ButtonSuccess from '@/components/buttons/ButtonSuccess.vue'
 import ButtonDanger from '@/components/buttons/ButtonDanger.vue'
 import ModalGenerator from '@/components/ModalGenerator.vue'
-import { toast } from 'bulma-toast'
 
 // Set the url for the database API
-const apiAddress = 'http://localhost:3000' // ${apiAddress} // TODO Update from new setup on Home.vue
+const { apiAddress } = useConfig()
 
 const positionRadio = [
   "N/A",

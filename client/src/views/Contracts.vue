@@ -1,16 +1,19 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
+import { toast } from 'bulma-toast'
+import { useConfig } from '@/composables/useConfig'
 import SectionGenerator from '@/components/SectionGenerator.vue'
 import ButtonSuccess from '@/components/buttons/ButtonSuccess.vue'
 import ButtonDanger from '@/components/buttons/ButtonDanger.vue'
 import ModalGenerator from '@/components/ModalGenerator.vue'
 import ContractListGenerator from '@/components/ContractListGenerator.vue'
-import InputfieldGenerator from '@/components/InputfieldGenerator.vue'
 import SelectInputFieldGenerator from '@/components/input_fields/SelectInputFieldGenerator.vue'
-import { toast } from 'bulma-toast'
+import InputfieldGenerator from '@/components/InputfieldGenerator.vue'
+
+
 
 // Set the url for the database API
-const apiAddress = 'http://localhost:3000' // ${apiAddress}
+const { apiAddress } = useConfig()
 
 // Section Title
 const sectionTitle = "Contracts Administration"

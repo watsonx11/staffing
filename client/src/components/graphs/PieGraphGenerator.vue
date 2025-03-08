@@ -1,12 +1,12 @@
-  <script setup>
-  import { computed, watch } from 'vue'
-  import { Chart as ChartJS, ArcElement, Tooltip, Legend, Title } from 'chart.js'
-  import { Pie } from 'vue-chartjs'
-  
+<script setup>
+import { computed, watch } from 'vue'
+import { Chart as ChartJS, ArcElement, Tooltip, Legend, Title } from 'chart.js'
+import { Pie } from 'vue-chartjs'
+
   // Register Chart.js components
-  ChartJS.register(ArcElement, Tooltip, Legend, Title)
-  
-  const props = defineProps({
+ChartJS.register(ArcElement, Tooltip, Legend, Title)
+
+const props = defineProps({
     // Data props
     data: {
         type: Array,
@@ -49,13 +49,13 @@
         type: String,
         default: null
     }
-  })
-  
+})
+
 // Check if we have data to display
 const hasData = computed(() => {
     return props.data && props.data.length > 0
-  })
-  
+})
+
 // Generate chart data from input data
 const chartData = computed(() => {
     // Extract labels and values from the data using the specified keys
@@ -68,24 +68,24 @@ const chartData = computed(() => {
         if (props.colorKey && item[props.colorKey]) {
             return item[props.colorKey]
         }
-      
+
       // Otherwise generate a color based on index
     const hue = (index * 137.5) % 360 // Use golden angle to spread colors
         return `hsl(${hue}, 70%, 60%)`
     })
     
     return {
-      labels,
-      datasets: [
-        {
-          data: values,
-          backgroundColor: backgroundColors,
-          borderWidth: 1
-        }
-      ]
+        labels,
+        datasets: [
+            {
+                data: values,
+                backgroundColor: backgroundColors,
+                borderWidth: 1
+            }
+        ]
     }
-  })
-  
+})
+
 // Default chart options
 const defaultOptions = {
     responsive: true,
@@ -120,7 +120,7 @@ const defaultOptions = {
         }
     }
 }
-  
+
 // Merge default options with user-provided options
 const mergedOptions = computed(() => {
     // If you don't have deepMerge, you can use a simple spread instead
@@ -129,29 +129,29 @@ const mergedOptions = computed(() => {
     // Deep merge implementation (better for nested objects)
     // Implement deepMerge or use lodash's _.merge
     return typeof deepMerge === 'function' 
-      ? deepMerge(defaultOptions, props.options)
-      : { ...defaultOptions, ...props.options }
-  })
-  
+        ? deepMerge(defaultOptions, props.options)
+        : { ...defaultOptions, ...props.options }
+})
+
 // Update title in options when title prop changes
 watch(() => props.title, (newTitle) => {
     if (mergedOptions.value?.plugins?.title) {
-      mergedOptions.value.plugins.title.display = !!newTitle
-      mergedOptions.value.plugins.title.text = newTitle || ''
+        mergedOptions.value.plugins.title.display = !!newTitle
+        mergedOptions.value.plugins.title.text = newTitle || ''
     }
-  })
+})
 </script>
 
 <template>
-    <div class="pie-chart-container" :style="{ height: height }">
-        <h2 v-if="title">{{ title }}</h2>
-        <div v-if="loading" class="loading-indicator">
+    <div class="pie-chart-container is-flex is-flex-direction-column" :style="{ height: height }">
+        <h2 class="mt-0 mb-2 is-size-5" v-if="title">{{ title }}</h2>
+        <div v-if="loading" class="loading-indicator is-italic">
             <slot name="loading">Loading data...</slot>
         </div>
-        <div v-else-if="error" class="error-message">
+        <div v-else-if="error" class="error-message has-text-danger is-italic">
             <slot name="error">{{ error }}</slot>
         </div>
-        <div v-else-if="!hasData" class="no-data-message">
+        <div v-else-if="!hasData" class="no-data-message is-italic">
             <slot name="empty">No data available</slot>
         </div>
         <div v-else class="chart-wrapper">
@@ -163,40 +163,32 @@ watch(() => props.title, (newTitle) => {
     </div>
 </template>
 
-
 <style scoped>
 .pie-chart-container {
-    display: flex;
-    flex-direction: column;
     width: 100%;
     border-radius: 8px;
-    background-color: white;
+    background-color: #ffffff;
     box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
     padding: 16px;
 }
-  
+
 h2 {
-    margin-top: 0;
-    margin-bottom: 16px;
-    font-size: 1.2rem;
     color: #333;
 }
-  
+
 .chart-wrapper {
     flex-grow: 1;
     position: relative;
 }
-  
-.loading-indicator, .error-message, .no-data-message {
+
+.loading-indicator, 
+.error-message, 
+.no-data-message {
     display: flex;
     align-items: center;
     justify-content: center;
     height: 100%;
     color: #666;
-    font-style: italic;
 }
-  
-  .error-message {
-    color: #d32f2f;
-}
-  </style>
+
+</style>

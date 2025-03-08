@@ -1,5 +1,7 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
+import { toast } from 'bulma-toast'
+import { useConfig } from '@/composables/useConfig'
 import SectionGenerator from '@/components/SectionGenerator.vue'
 import InputfieldGenerator from '@/components/InputfieldGenerator.vue'
 import ReadOnlyInputField from '@/components/input_fields/ReadOnlyInputField.vue'
@@ -8,10 +10,9 @@ import ButtonDanger from '@/components/buttons/ButtonDanger.vue'
 import ButtonWarning from '@/components/buttons/ButtonWarning.vue'
 import ButtonInfo from '@/components/buttons/ButtonInfo.vue'
 import ModalGenerator from '@/components/ModalGenerator.vue'
-import { toast } from 'bulma-toast'
 
 // Set the url for the database API
-const apiAddress = 'http://localhost:3000'
+const { apiAddress } = useConfig()
 
 // Import the toast function from bulma-toast
 

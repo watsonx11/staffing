@@ -3,6 +3,8 @@ import { ref, computed, onMounted, watch } from 'vue'
 import SectionGenerator from '@/components/SectionGenerator.vue'
 import PieGraphGenerator from '@/components/graphs/PieGraphGenerator.vue'
 import ChargeCodeAreaChart from '@/components/graphs/ChargeCodeAreaChart.vue'
+
+// Import composables
 import usePersonnelData from '@/composables/usePersonnelData'
 import useChargeCodesData from '@/composables/useChargeCodesData'
 
