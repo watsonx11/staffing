@@ -1,0 +1,32 @@
+// @/assets/main.scss
+
+// Define variable colors
+
+// Main Colors
+$color-primary: #3273dc;       // Blue used for links, percentages
+$color-danger: #ff3860;        // Red for overallocations
+$color-warning: #ff9800;       // Orange for warnings
+$color-highlight: #ffdd57;     // Yellow for current month border
+$color-highlight-bg: #fffbeb;  // Light yellow for current month bg
+
+// Neutrals
+$color-black: #000000;         // Used in border-right-dark
+$color-dark: #333333;          // Used for section titles
+$color-text: #363636;          // Used for labels
+$color-text-secondary: #4a4a4a; // Used for filter info
+$color-text-tertiary: #555555; // Used for charge code dates
+$color-text-quaternary: #666666; // Used for year labels, coverage indicator
+$color-text-muted: #777777;    // Used for date range
+$color-inactive: #aaaaaa;      // Used for inactive charge codes
+
+// Grayscale
+$color-gray-darkest: #dbdbdb;  // Used for card borders
+$color-gray-darker: #e8e8e8;   // Used for expanded content borders
+$color-gray-dark: #f0f0f0;     // Used for controls container bg
+$color-gray-medium: #f5f5f5;   // Used for subtle borders
+$color-gray-light: #f8f8f8;    // Used for filters container bg
+$color-gray-lighter: #f9f9f9;  // Used for report sections, expanded content
+$color-gray-lightest: #ffffff; // White, for general backgrounds
+
+// Miscellaneous
+$color-lightgray: #d3d3d3;   // Used in border-bottom-light

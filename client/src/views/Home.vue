@@ -145,7 +145,7 @@ onMounted(() => {
                 </div>
             </div>
         </div>
-     </div>
+    </div>
 </template>
 <style lang="css" scoped>
 .contract-name-box {

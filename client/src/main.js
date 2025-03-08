@@ -7,6 +7,12 @@ import router from '@/plugins/router'
 // Import Bulma's CSS
 import 'bulma/css/bulma.css'
 
+// Import Local CSS styles
+import '@/assets/main.css'
+
+// Import SCSS
+import '@/assets/main.scss'
+
 // Import the toast function and setDefaults)
 import { toast, setDefaults } from 'bulma-toast'
 
