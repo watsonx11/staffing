@@ -104,7 +104,7 @@ export default function usePersonnelData(selectedContractRef) {
             email: person.email_address,
             position: person.position,
             location: person.location_name,
-            coverage_percentage: person.coverage_percentage, 
+            coverage_percentage: person.coverage_percentage, // Add the coverage percentage
             chargeCodes: chargeCodes
           }
         })
@@ -124,6 +124,7 @@ export default function usePersonnelData(selectedContractRef) {
           email: 'sean.watson@example.com',
           position: 'Developer',
           location: 'Remote',
+          coverage_percentage: 100,
           chargeCodes: [
             { 
               id: 1,
@@ -160,6 +161,7 @@ export default function usePersonnelData(selectedContractRef) {
           email: 'al.almanza@example.com',
           position: 'Project Manager',
           location: 'Office A',
+          coverage_percentage: 50,
           chargeCodes: [
             { 
               id: 4,
@@ -187,6 +189,7 @@ export default function usePersonnelData(selectedContractRef) {
           email: 'deshawn.baldwin@example.com',
           position: 'Designer',
           location: 'Office B',
+          coverage_percentage: 75,
           chargeCodes: [
             { 
               id: 6,
@@ -214,6 +217,7 @@ export default function usePersonnelData(selectedContractRef) {
           email: 'jeff.vaught@example.com',
           position: 'Engineer',
           location: 'Office A',
+          coverage_percentage: 80,
           chargeCodes: [
             { 
               id: 8,

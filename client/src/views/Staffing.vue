@@ -212,8 +212,8 @@ const monthNavigationRef = ref(null)
                 <div class="card">
                     <header class="card-header">
                         <p class="card-header-title">
-                            {{ person.name }}&nbsp;
-                            <span v-if="person.coverage_percentage !== undefined">
+                            {{ person.name }}
+                            <span v-if="person.coverage_percentage !== undefined" class="coverage-indicator">
                                 ({{ person.coverage_percentage || 100 }}%)
                             </span>
                         </p>
@@ -240,11 +240,11 @@ const monthNavigationRef = ref(null)
                 <div 
                     class="percentage-display" 
                     :class="{ 
-                        'warning': calculateMonthlyTotal(person, month.fullDate) !== 100,
+                        'warning': calculateMonthlyTotal(person, month.fullDate) < (person.coverage_percentage || 100),
                         'overallocated': hasOverallocation(person, month.fullDate)
                     }"
                     :title="hasOverallocation(person, month.fullDate) ? 
-                        `Warning: Max daily allocation is ${getMaxDailyAllocation(person, month.fullDate)}%` : 
+                        `Warning: Max daily allocation is ${getMaxDailyAllocation(person, month.fullDate)}% exceeds coverage of ${person.coverage_percentage || 100}%` : 
                         ''"
                 >
                     {{ calculateMonthlyTotal(person, month.fullDate) }}%
@@ -390,6 +390,13 @@ const monthNavigationRef = ref(null)
     display: flex;
     align-items: center;
     justify-content: center;
+}
+
+.coverage-indicator {
+    font-size: 0.9rem;
+    font-weight: normal;
+    color: #666;
+    margin-left: 0.5rem;
 }
 
 .coverage-indicator {

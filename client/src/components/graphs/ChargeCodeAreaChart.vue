@@ -134,6 +134,36 @@ const generateColors = (count) => {
   return colors
 }
 
+// Calculate coverage status
+const coverageStatus = computed(() => {
+  if (!props.person) return null;
+  
+  const coveragePercentage = props.person.coverage_percentage || 100;
+  
+  // Calculate the total allocation for the most recent month
+  const currentMonth = dateRange.value[0]; // First month in our range (which is the current month)
+  
+  // Sum up all charge code allocations for this month
+  let totalAllocation = 0;
+  if (props.person.chargeCodes) {
+    props.person.chargeCodes.forEach(chargeCode => {
+      totalAllocation += calculateMonthlyAllocation(chargeCode, currentMonth);
+    });
+  }
+  
+  // Round to 1 decimal place
+  totalAllocation = Math.round(totalAllocation * 10) / 10;
+  
+  // Check if coverage is met or exceeded
+  const isCoverageMet = totalAllocation >= coveragePercentage;
+  
+  return {
+    coveragePercentage,
+    totalAllocation,
+    isCoverageMet
+  };
+});
+
 // Prepare chart data
 const chartData = computed(() => {
   if (!props.person || !props.person.chargeCodes || props.person.chargeCodes.length === 0) {
@@ -261,7 +291,20 @@ const handleUpdateChargeCodes = (updatedChargeCodes) => {
 <template>
   <div class="area-chart-container" :style="{ height: height }">
     <div class="chart-header">
-      <h2 v-if="title" class="chart-title">{{ title }}</h2>
+      <div class="chart-header-left">
+        <h2 v-if="title" class="chart-title">{{ title }}</h2>
+        
+        <!-- Add coverage status indicator -->
+        <div v-if="person && coverageStatus" class="coverage-status">
+          <span class="coverage-label">Coverage: </span>
+          <span class="coverage-value" :class="{ 
+            'is-success': coverageStatus.isCoverageMet, 
+            'is-warning': !coverageStatus.isCoverageMet 
+          }">
+            {{ coverageStatus.totalAllocation }}% / {{ coverageStatus.coveragePercentage }}%
+          </span>
+        </div>
+      </div>
       
       <!-- Add action buttons to match the staffing page -->
       <div v-if="person && !loading" class="chart-actions">
@@ -325,10 +368,45 @@ const handleUpdateChargeCodes = (updatedChargeCodes) => {
   margin-bottom: 16px;
 }
 
+.chart-header-left {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
 .chart-title {
   margin: 0;
   font-size: 1.2rem;
   color: #333;
+}
+
+.coverage-status {
+  display: flex;
+  align-items: center;
+  font-size: 0.9rem;
+  margin-top: 4px;
+}
+
+.coverage-label {
+  font-weight: 600;
+  margin-right: 5px;
+}
+
+.coverage-value {
+  padding: 2px 8px;
+  border-radius: 12px;
+  background-color: #f5f5f5;
+  font-weight: 500;
+}
+
+.coverage-value.is-success {
+  background-color: rgba(35, 209, 96, 0.2);
+  color: #257953;
+}
+
+.coverage-value.is-warning {
+  background-color: rgba(255, 221, 87, 0.2);
+  color: #946c00;
 }
 
 .chart-actions {
@@ -355,19 +433,4 @@ const handleUpdateChargeCodes = (updatedChargeCodes) => {
 .error-message {
   color: #d32f2f;
 }
-
-/* Button styles matching staffing page
-.button {
-  background-color: #fff;
-  border: 1px solid #dbdbdb;
-  color: #363636;
-  cursor: pointer;
-  padding: 0.25em 0.75em;
-  border-radius: 4px;
-}
-
-.button:hover {
-  background-color: #f5f5f5;
-  border-color: #b5b5b5;
-} */
 </style>
