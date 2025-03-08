@@ -23,6 +23,7 @@ const sectionTitle = "Roadmap"
             <li>Stacked graph for individuals</li>
             <li>Add edit/add charge code for person on stacked graph</li>
             <li>Added login page, and intial OIDC auth capability</li>
+            <li>Set coverage percentage for a person</li>
         </ul>
         <hr>
         <p class="title">In Progress Development Items</p>
@@ -36,15 +37,15 @@ const sectionTitle = "Roadmap"
                     <li>List of people and what charge code</li>
                     <li>?email generation? to simiply informing them?</li>
                 </ul>
-            <li>GDMS Accounting month/hours vice month/month for staffing</li>
-            <li>Quick visual (bar graph?) underneath the percetages for each charge code showing a rough start/end of the charging?</li>
-            <li>Ability to quickly focus on the Over/Under Allocated by clicking on the Home page to the Staffing Page?</li>
-            <li>Add a expand/collapse all button on the staffing page to easily open/close all personnel cards</li>
-            <li>Change default date to +1 month vice +1year in charge code add modal</li>
-            <li>Add Engineering tag to Personnel</li>
-            <li>Add the ability to not flag a person is > or < 100% based on being supported by other programs</li>
+                <li>Ability to quickly focus on the Over/Under Allocated by clicking on the Home page to the Staffing Page?</li>
+                <li>Add a expand/collapse all button on the staffing page to easily open/close all personnel cards</li>
+                <li>Add Employee Number and Employee manager fields Personnel</li>
+                <li>Add Engineering tag to Personnel</li>
+                <li>OIDC integration</li>
+                <li>Change default date to +1 month vice +1year in charge code add modal</li>
+                <li>GDMS Accounting month/hours vice month/month for staffing</li>
             <li>Add FTE/Month calculation based on accounting month</li>
-            <li>OIDC integration</li>
+            <li>Quick visual (bar graph?) underneath the percetages for each charge code showing a rough start/end of the charging?</li>
             <li>Ability to bulk edit personnel and a single charge code</li>
             <li>Ability to bulk edit personnel and a charge code percentage</li>
             <li>Ability to bulk edit personnel and a charge code end date</li>
@@ -80,7 +81,6 @@ const sectionTitle = "Roadmap"
 }
 
 .complete li {
-    text-decoration: line-through;
     color: green;
 }
 </style>

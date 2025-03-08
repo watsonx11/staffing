@@ -154,14 +154,48 @@ const coverageStatus = computed(() => {
   // Round to 1 decimal place
   totalAllocation = Math.round(totalAllocation * 10) / 10;
   
-  // Check if coverage is met or exceeded
+  // Check different coverage states
   const isCoverageMet = totalAllocation >= coveragePercentage;
+  const isOverallocated = totalAllocation > 100;
   
   return {
     coveragePercentage,
     totalAllocation,
-    isCoverageMet
+    isCoverageMet,
+    isOverallocated
   };
+});
+
+// Calculate the max Y-axis value based on actual allocation
+const yAxisMax = computed(() => {
+  const defaultMax = 100;
+  
+  if (!props.person || !props.person.chargeCodes || props.person.chargeCodes.length === 0) {
+    return defaultMax;
+  }
+  
+  // Find the maximum allocation in any month
+  let maxAllocation = 0;
+  
+  // Check allocation for each month in the date range
+  dateRange.value.forEach(date => {
+    let monthlyTotal = 0;
+    
+    // Sum all charge codes for this month
+    props.person.chargeCodes.forEach(chargeCode => {
+      monthlyTotal += calculateMonthlyAllocation(chargeCode, date);
+    });
+    
+    maxAllocation = Math.max(maxAllocation, monthlyTotal);
+  });
+  
+  // If max allocation is below default, return default
+  if (maxAllocation <= defaultMax) {
+    return defaultMax;
+  }
+  
+  // Otherwise add 10% padding and round up to nearest 10
+  return Math.ceil(maxAllocation * 1.1 / 10) * 10;
 });
 
 // Prepare chart data
@@ -199,52 +233,85 @@ const chartData = computed(() => {
   }
 })
 
-// Default chart options
-const defaultOptions = {
-  responsive: true,
-  maintainAspectRatio: false,
-  scales: {
-    x: {
-      stacked: true,
-      title: {
-        display: true,
-        text: 'Month'
+// Default chart options with dynamic max Y axis based on coverage
+const chartOptions = computed(() => {
+  return {
+    responsive: true,
+    maintainAspectRatio: false,
+    scales: {
+      x: {
+        stacked: true,
+        title: {
+          display: true,
+          text: 'Month'
+        }
+      },
+      y: {
+        stacked: true,
+        min: 0,
+        max: yAxisMax.value,
+        title: {
+          display: true,
+          text: 'Allocation (%)'
+        }
       }
     },
-    y: {
-      stacked: true,
-      min: 0,
-      max: 100,
-      title: {
-        display: true,
-        text: 'Allocation (%)'
-      }
-    }
-  },
-  plugins: {
-    legend: {
-      position: 'top',
-      labels: {
-        usePointStyle: true,
-        padding: 15
-      }
-    },
-    tooltip: {
-      callbacks: {
-        label: (context) => {
-          const label = context.dataset.label || ''
-          const value = Math.round(context.raw * 10) / 10
-          return `${label}: ${value}%`
+    plugins: {
+      legend: {
+        position: 'top',
+        labels: {
+          usePointStyle: true,
+          padding: 15
+        }
+      },
+      tooltip: {
+        callbacks: {
+          label: (context) => {
+            const label = context.dataset.label || ''
+            const value = Math.round(context.raw * 10) / 10
+            return `${label}: ${value}%`
+          }
         }
       }
     }
   }
-}
+});
 
 // Merge default options with user-provided options
 const mergedOptions = computed(() => {
-  // Use a simple spread for merging
-  return { ...defaultOptions, ...props.options }
+  // Use a deep merge strategy to ensure nested properties like scales.y.max are properly merged
+  const options = JSON.parse(JSON.stringify(chartOptions.value));
+  
+  if (props.options) {
+    // Merge top-level properties
+    for (const key in props.options) {
+      if (key === 'scales' && props.options.scales) {
+        options.scales = options.scales || {};
+        // Ensure scales.y.max from our computed property isn't overridden
+        for (const axisKey in props.options.scales) {
+          options.scales[axisKey] = options.scales[axisKey] || {};
+          for (const propKey in props.options.scales[axisKey]) {
+            // Skip the max property for y-axis to preserve our dynamic calculation
+            if (!(axisKey === 'y' && propKey === 'max')) {
+              options.scales[axisKey][propKey] = props.options.scales[axisKey][propKey];
+            }
+          }
+        }
+      } else if (key === 'plugins' && props.options.plugins) {
+        options.plugins = options.plugins || {};
+        for (const pluginKey in props.options.plugins) {
+          options.plugins[pluginKey] = {
+            ...options.plugins[pluginKey],
+            ...props.options.plugins[pluginKey]
+          };
+        }
+      } else {
+        options[key] = props.options[key];
+      }
+    }
+  }
+  
+  return options;
 })
 
 // Watch for change in personnel or months to update the date range
@@ -298,8 +365,9 @@ const handleUpdateChargeCodes = (updatedChargeCodes) => {
         <div v-if="person && coverageStatus" class="coverage-status">
           <span class="coverage-label">Coverage: </span>
           <span class="coverage-value" :class="{ 
-            'is-success': coverageStatus.isCoverageMet, 
-            'is-warning': !coverageStatus.isCoverageMet 
+            'is-success': coverageStatus.isCoverageMet && !coverageStatus.isOverallocated, 
+            'is-warning': !coverageStatus.isCoverageMet,
+            'is-danger': coverageStatus.isOverallocated
           }">
             {{ coverageStatus.totalAllocation }}% / {{ coverageStatus.coveragePercentage }}%
           </span>
@@ -407,6 +475,11 @@ const handleUpdateChargeCodes = (updatedChargeCodes) => {
 .coverage-value.is-warning {
   background-color: rgba(255, 221, 87, 0.2);
   color: #946c00;
+}
+
+.coverage-value.is-danger {
+  background-color: rgba(241, 70, 104, 0.2);
+  color: #c53030;
 }
 
 .chart-actions {

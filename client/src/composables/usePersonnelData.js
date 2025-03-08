@@ -1,5 +1,8 @@
 // @/composables/usePersonnelData.js
 import { ref, computed, watch } from 'vue'
+import { useConfig } from '@/composables/useConfig'
+
+const { apiAddress } = useConfig()
 
 export default function usePersonnelData(selectedContractRef) {
   // Personnel data state
@@ -61,7 +64,7 @@ export default function usePersonnelData(selectedContractRef) {
     personnelError.value = null
     
     try {
-      const response = await fetch('http://localhost:3000/api/personnel')
+      const response = await fetch(`${apiAddress}/api/personnel`)
       
       if (!response.ok) {
         throw new Error(`Failed to fetch personnel: ${response.status}`)
@@ -80,7 +83,7 @@ export default function usePersonnelData(selectedContractRef) {
           let chargeCodes = []
           
           try {
-            const chargeCodeResponse = await fetch(`http://localhost:3000/api/personnel/${person.id}/charge-codes`)
+            const chargeCodeResponse = await fetch(`${apiAddress}/api/personnel/${person.id}/charge-codes`)
             
             if (chargeCodeResponse.ok) {
               const chargeCodeData = await chargeCodeResponse.json()
@@ -275,7 +278,7 @@ export default function usePersonnelData(selectedContractRef) {
           
           // Try to post to API
           try {
-            const response = await fetch(`http://localhost:3000/api/personnel/${person.id}/charge-codes`, {
+            const response = await fetch(`${apiAddress}/api/personnel/${person.id}/charge-codes`, {
               method: 'POST',
               headers: {
                 'Content-Type': 'application/json'
@@ -347,7 +350,7 @@ export default function usePersonnelData(selectedContractRef) {
           
           try {
             // Use the new bulk update endpoint
-            const response = await fetch(`http://localhost:3000/api/personnel/${person.id}/charge-codes-bulk`, {
+            const response = await fetch(`${apiAddress}/api/personnel/${person.id}/charge-codes-bulk`, {
               method: 'PUT',
               headers: {
                 'Content-Type': 'application/json'
