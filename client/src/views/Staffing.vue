@@ -128,11 +128,11 @@ const monthNavigationRef = ref(null)
     </div>
 
     <!-- Filters -->
-    <div class="filters-container mb-4">
-        <div class="columns">
+    <div class="filters-container mb-4 mt-4">
+        <div class="columns mb-0">
             <!-- Name search -->
             <div class="column is-4">
-                <div class="field">
+                <div class="field mb-0">
                     <label class="label">Name Search</label>
                     <div class="control">
                         <input 
@@ -146,7 +146,7 @@ const monthNavigationRef = ref(null)
             </div>
             <!-- Contract filter -->
             <div class="column is-4">
-                <div class="field">
+                <div class="field mb-0">
                     <label class="label">Contract Filter</label>
                     <div class="control">
                         <div class="select is-fullwidth">
@@ -181,8 +181,8 @@ const monthNavigationRef = ref(null)
         <!-- Personnel header -->
             <div class="column is-3 is-top-row">
                 <div>Personnel</div>
-                <div class="year-label empty-year-label">&nbsp;</div>
-                <div class="filter-info" v-if="selectedContract || (searchQuery && searchQuery.length >= 3)">
+                <div class="year-label has-text-weight-normal">&nbsp;</div>
+                <div class="filter-info mt-1 has-text-weight-normal" v-if="selectedContract || (searchQuery && searchQuery.length >= 3)">
                     <span v-if="selectedContract">
                         Contract: {{ availableContracts.find(c => c.value === selectedContract)?.text || selectedContract }}
                     </span>
@@ -194,7 +194,7 @@ const monthNavigationRef = ref(null)
     </MonthNavigation>
 
     <!-- No personnel message -->
-    <div v-if="personnelData.length === 0 && !loadingPersonnel" class="notification is-warning">
+    <div v-if="personnelData.length === 0 && !loadingPersonnel" class="notification has-text-warning">
         No personnel data available. Please add personnel records first.
     </div>
 
@@ -204,16 +204,16 @@ const monthNavigationRef = ref(null)
     </div>
 
     <!-- Personnel rows -->
-    <div v-for="(person, personIndex) in filteredPersonnel" :key="personIndex" class="person-row">
+    <div v-for="(person, personIndex) in filteredPersonnel" :key="personIndex" class="person-row mb-2">
         <!-- Main row with person name and total percentages -->
-        <div class="columns is-marginless">
+        <div class="columns mb-0">
             <!-- Personnel column with card -->
             <div class="column is-3">
-                <div class="card">
+                <div class="card mb-0 mt-3">
                     <header class="card-header">
                         <p class="card-header-title">
                             {{ person.name }}
-                            <span v-if="person.coverage_percentage !== undefined" class="coverage-indicator">
+                            <span v-if="person.coverage_percentage !== undefined" class="coverage-indicator ml-2">
                                 ({{ person.coverage_percentage || 100 }}%)
                             </span>
                         </p>
@@ -240,22 +240,22 @@ const monthNavigationRef = ref(null)
                 <div 
                     class="percentage-display" 
                     :class="{ 
-                        'warning': calculateMonthlyTotal(person, month.fullDate) < (person.coverage_percentage || 100),
-                        'overallocated': hasOverallocation(person, month.fullDate)
+                        'has-text-warning': calculateMonthlyTotal(person, month.fullDate) < (person.coverage_percentage || 100),
+                        'has-text-danger has-text-weight-bold': hasOverallocation(person, month.fullDate)
                     }"
                     :title="hasOverallocation(person, month.fullDate) ? 
                         `Warning: Max daily allocation is ${getMaxDailyAllocation(person, month.fullDate)}% exceeds coverage of ${person.coverage_percentage || 100}%` : 
                         ''"
                 >
                     {{ calculateMonthlyTotal(person, month.fullDate) }}%
-                    <div v-if="hasOverallocation(person, month.fullDate)" class="overallocation-marker">!</div>
+                    <div v-if="hasOverallocation(person, month.fullDate)" class="overallocation-marker is-flex is-align-items-center is-justify-content-center">!</div>
                 </div>
             </div>
         </div>
 
         <!-- Expanded card content showing individual charge codes -->
         <div v-if="expandedCards[person.name]" class="expanded-content">
-            <div v-for="(chargeCode, codeIndex) in person.chargeCodes" :key="codeIndex" class="columns is-marginless">
+            <div v-for="(chargeCode, codeIndex) in person.chargeCodes" :key="codeIndex" class="columns mb-0">
                 <div class="column is-3 charge-code-details">
                     <div class="pl-5">
                         {{ chargeCode.name }}: {{ chargeCode.percentage }}%
@@ -275,7 +275,7 @@ const monthNavigationRef = ref(null)
                     class="column is-1 has-text-centered"
                     :class="{ 'current-month-column': monthNavigationRef?.isCurrentMonth(monthNavigationRef.monthNames.indexOf(month.name), month.year) }"
                 >
-                    <div v-if="isChargeCodeActive(chargeCode, month.fullDate)" class="charge-code-percentage">
+                    <div v-if="isChargeCodeActive(chargeCode, month.fullDate)" class="charge-code-percentage has-text-weight-normal">
                         {{ chargeCode.percentage }}%
             
                         <!-- Show start date if this is the start month and doesn't start on the 1st -->
@@ -322,59 +322,38 @@ const monthNavigationRef = ref(null)
     />
 </template>
 
+<style lange="scss">
+@import '@/assets/main.scss';
+
+</style>
+
 <style scoped>
-.is-top-row {
-    border-bottom: 1px solid lightgray;
-    font-weight: bold;
-    padding-bottom: 0.75rem;
-}
 
 .filters-container {
     background-color: #f8f8f8;
     padding: 1rem;
     border-radius: 4px;
-    margin-top: 1rem;
 }
 
 .filter-info {
     font-size: 0.8rem;
     color: #4a4a4a;
-    font-weight: normal;
-    margin-top: 0.25rem;
-}
-
-.field {
-    margin-bottom: 0;
 }
 
 .is-month-column {
     border-right: 1px solid black;
 }
 
-.card {
-    margin-bottom: 0;
-    box-shadow: none;
-    border: 1px solid #dbdbdb;
-}
-
+.card,
 .card-header {
     box-shadow: none;
-    border-bottom: 1px solid #dbdbdb;
+    border: 1px solid #dbdbdb;
 }
 
 .percentage-display {
     padding: 0.5rem 0;
     font-weight: bold;
     position: relative;
-}
-
-.warning {
-    color: #ff9800; /* Orange for non-100% allocation */
-}
-
-.overallocated {
-    color: #ff3860; /* Red for days with >100% allocation */
-    font-weight: bold;
 }
 
 .overallocation-marker {
@@ -387,39 +366,23 @@ const monthNavigationRef = ref(null)
     width: 14px;
     height: 14px;
     border-radius: 50%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
 }
 
 .coverage-indicator {
     font-size: 0.9rem;
     font-weight: normal;
     color: #666;
-    margin-left: 0.5rem;
-}
-
-.coverage-indicator {
-    font-size: 0.9rem;
-    font-weight: normal;
-    color: #666;
-    margin-left: 0.5rem;
 }
 
 .person-row {
     border-bottom: 1px solid #f5f5f5;
-    margin-bottom: 0.5rem;
 }
 
 .columns {
-    margin-bottom: 0 !important;
     align-items: center;
 }
 
-.card-header-title {
-    padding: 0.5rem 0.75rem;
-}
-
+.card-header-title,
 .card-header-icon {
     padding: 0.5rem 0.75rem;
 }
@@ -446,7 +409,6 @@ const monthNavigationRef = ref(null)
 
 .charge-code-percentage {
     color: #3273dc;
-    font-weight: normal;
 }
 
 .charge-code-inactive {
@@ -467,33 +429,9 @@ const monthNavigationRef = ref(null)
     color: #3273dc; /* Blue to match the percentage */
 }
 
-.pl-5 {
-    padding-left: 1.5rem;
-}
-
-.month-navigation {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 1rem;
-}
-
-.month-navigation .button {
-    margin: 0 0.5rem;
-    min-width: 2.5rem;
-}
-
 .year-label {
     font-size: 0.7rem;
     color: #666;
-    font-weight: normal;
 }
 
-.current-month {
-    background-color: #fffbeb;
-    border-bottom: 2px solid #ffdd57;
-}
-
-.current-month-column {
-    background-color: #fffbeb;
-}
 </style>

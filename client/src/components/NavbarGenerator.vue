@@ -90,21 +90,18 @@ const handleLogout = async () => {
     </nav>
 </template>
 
-<style scoped>
+<style lang="scss" scoped>
+@import '@/assets/main.scss';
+
 .navbar-item.is-active,
 .navbar-link.is-active {
-    color: gold !important;
-    font-weight: bold;;
+    @extend .color-is-active;
+    font-weight: bold;
 }
 
 .navbar-item:hover,
 .navbar-item button:hover {
-    color: #e6c200;
+    @extend .color-hover;
 }
 
-/* Optional: adjust hover state for consistency */
-.navbar-item.is-active:hover,
-.navbar-link.is-active:hover {
-    color: #e6c200 !important; /* Slightly darker gold on hover */
-}
 </style>

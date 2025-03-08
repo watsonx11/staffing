@@ -9,6 +9,10 @@ $color-warning: #ff9800;       // Orange for warnings
 $color-highlight: #ffdd57;     // Yellow for current month border
 $color-highlight-bg: #fffbeb;  // Light yellow for current month bg
 
+// Navbar Colors
+$color-is-active: #ffd700;     // Used for active links on the Navbar
+$color-hover: #e6c200;        // Used for color on hover for Navbar items     
+
 // Neutrals
 $color-black: #000000;         // Used in border-right-dark
 $color-dark: #333333;          // Used for section titles
@@ -30,3 +34,54 @@ $color-gray-lightest: #ffffff; // White, for general backgrounds
 
 // Miscellaneous
 $color-lightgray: #d3d3d3;   // Used in border-bottom-light
+
+// Navbar Mixins
+@mixin color-is-active {
+    color: $color-is-active !important;
+}
+
+@mixin color-hover {
+    color: $color-hover;
+}
+
+// Navbar styles
+.color-is-active {
+    @include color-is-active;
+}
+
+.color-hover {
+    @include color-hover;
+}
+
+// Border Mixins
+@mixin border-bottom-light-gray{
+    border-bottom: 1px solid $color-lightgray;
+}
+
+// Border Styles
+.border-bottom-light-gray {
+    @include border-bottom-light-gray;
+}
+
+// Staffing / MonthNavigation Mixins
+
+@mixin is-top-row {
+    border-bottom: 1px solid $color-lightgray;
+    font-weight: bold;
+    padding-bottomm: 0.75rem;
+}
+
+@mixin current-month-bg-color {
+    background-color: $color-highlight-bg;
+}
+
+// Staffing / MonthNavigation Styles
+
+.current-month,
+.current-month-column {
+    @include current-month-bg-color;
+}
+
+.is-top-row {
+    @include is-top-row;
+}

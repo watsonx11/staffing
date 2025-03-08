@@ -172,7 +172,7 @@ export default {
   max-width: 400px;
   border-radius: 6px;
   box-shadow: 0 2px 15px rgba(0, 0, 0, 0.1);
-  background-color: white;
+  background-color: #ffffff;
 }
 
 .card-content {

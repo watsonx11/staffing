@@ -89,7 +89,7 @@ defineExpose({
 
 <template>
     <!-- Navigation controls -->
-    <div class="month-navigation">
+    <div class="month-navigation is-flex is-justify-content-center mb-4">
         <button class="button" @click="scrollLeft" :disabled="startMonthIndex === 0">
             ←
         </button>
@@ -102,7 +102,7 @@ defineExpose({
     </div>
 
     <!-- Month header row -->
-    <div class="columns is-marginless">
+    <div class="columns">
     <!-- Personnel header slot -->
         <slot name="personnel-header"></slot>
 
@@ -114,115 +114,16 @@ defineExpose({
             :class="{ 'current-month': isCurrentMonth(monthNames.indexOf(month.name), month.year) }"
         >
             <div>{{ month.name }}</div>
-            <div class="year-label">{{ month.year }}</div>
+            <div class="year-label is-size-7 has-text-weight-normal">{{ month.year }}</div>
         </div>
     </div>
 </template>
 
 <style scoped>
-.is-top-row {
-    border-bottom: 1px solid lightgray;
-    font-weight: bold;
-    padding-bottom: 0.75rem;
-}
-
-.filters-container {
-    background-color: #f8f8f8;
-    padding: 1rem;
-    border-radius: 4px;
-    margin-top: 1rem;
-}
-
-.filter-info {
-    font-size: 0.8rem;
-    color: #4a4a4a;
-    font-weight: normal;
-    margin-top: 0.25rem;
-}
-
-.field {
-    margin-bottom: 0;
-}
-
-.is-month-column {
-    border-right: 1px solid black;
-}
-
-.card {
-    margin-bottom: 0;
-    box-shadow: none;
-    border: 1px solid #dbdbdb;
-}
-
-.card-header {
-    box-shadow: none;
-    border-bottom: 1px solid #dbdbdb;
-}
-
-.percentage-display {
-    padding: 0.5rem 0;
-    font-weight: bold;
-}
-
-.warning {
-    color: #ff3860;
-}
-
-.person-row {
-    border-bottom: 1px solid #f5f5f5;
-    margin-bottom: 0.5rem;
-}
 
 .columns {
     margin-bottom: 0 !important;
     align-items: center;
-}
-
-.card-header-title {
-    padding: 0.5rem 0.75rem;
-}
-
-.card-header-icon {
-    padding: 0.5rem 0.75rem;
-}
-
-.card-footer-item {
-    padding: 0.5rem;
-}
-
-.expanded-content {
-    background-color: #f9f9f9;
-    padding: 0.5rem 0;
-    border-bottom: 1px solid #e8e8e8;
-}
-
-.charge-code-details {
-    font-size: 0.9rem;
-}
-
-.date-range {
-    font-size: 0.8rem;
-    color: #777;
-    margin-top: 0.2rem;
-}
-
-.charge-code-percentage {
-    color: #3273dc;
-    font-weight: normal;
-}
-
-.charge-code-inactive {
-    color: #aaa;
-}
-
-.pl-5 {
-    padding-left: 1.5rem;
-}
-
-.month-navigation {
-    display: flex;
-    justify-content: center;
-    margin-bottom: 1rem;
 }
 
 .month-navigation .button {
@@ -231,17 +132,6 @@ defineExpose({
 }
 
 .year-label {
-    font-size: 0.7rem;
-    color: #666;
-    font-weight: normal;
-}
-
-.current-month {
-    background-color: #fffbeb;
-    border-bottom: 2px solid #ffdd57;
-}
-
-.current-month-column {
-    background-color: #fffbeb;
+    color: #666666;
 }
 </style>

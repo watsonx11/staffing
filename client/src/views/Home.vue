@@ -129,7 +129,7 @@ onMounted(() => {
         >
             <div class="box has-text-centered">
                 <div class="columns">
-                    <div class="column contract-name-box">
+                    <div class="column border-bottom-light-gray">
                         <span class="is-size-5">{{ item.contractname }}</span>
                     </div>
                 </div>
@@ -147,8 +147,3 @@ onMounted(() => {
         </div>
     </div>
 </template>
-<style lang="css" scoped>
-.contract-name-box {
-    border-bottom: 1px solid lightgray;
-}
-</style>
