@@ -1,9 +1,10 @@
 <script setup>
 import { ref, onMounted, computed } from 'vue'
 import { toast } from 'bulma-toast'
+import { useConfig } from '@/composables/useConfig'
 
-// Set the url for the database API
-const apiAddress = 'http://localhost:3000'
+// Get the API address from config
+const { apiAddress } = useConfig()
 
 // Reactive state
 const personnel = ref([])
@@ -60,16 +61,20 @@ const fetchAllPersonnelChargeCodes = async (personnelList) => {
   return allChargeCodes
 }
 
-// Calculate underallocated personnel
+// Calculate underallocated personnel based on coverage percentage
 const calculateUnderallocatedPersonnel = () => {
   // Create a map to track total allocation percentage per person
   const allocationMap = new Map()
-  const personIds = new Set(personnel.value.map(p => p.id))
   
-  // Initialize all personnel with 0% allocation
-  for (const personId of personIds) {
-    allocationMap.set(personId, 0)
-  }
+  // Create a personnel map to easily look up coverage percentages
+  const personnelMap = new Map()
+  personnel.value.forEach(person => {
+    // Store the person object for easy lookup later
+    personnelMap.set(person.id, person)
+  
+    // Initialize allocation at 0%
+    allocationMap.set(person.id, 0)
+  })
   
   // Filter charge codes that are active in the current month
   const activeChargeCodes = personnelChargeCodes.value.filter(code => {
@@ -84,17 +89,23 @@ const calculateUnderallocatedPersonnel = () => {
   // Sum up allocation percentages per person
   activeChargeCodes.forEach(code => {
     const personId = code.personnel_id
-    if (!allocationMap.has(personId)) {
-      allocationMap.set(personId, 0)
+    if (allocationMap.has(personId)) {
+      allocationMap.set(personId, allocationMap.get(personId) + code.percentage)
     }
     
     allocationMap.set(personId, allocationMap.get(personId) + code.percentage)
   })
   
-  // Count people with under 100% allocation
+  // Count people with allocations less than their coverage target
   let count = 0
-  for (const [_, percentage] of allocationMap.entries()) {
-    if (percentage < 100) {
+  for (const [personId, allocationPercentage] of allocationMap.entries()) {
+    const person = personnelMap.get(personId)
+    
+    // Get the person's target coverage percentage (default to 100% if not set)
+    const targetCoverage = person.coverage_percentage !== undefined ? person.coverage_percentage : 100
+    
+    // Consider underallocated only if actual allocation is less than target coverage
+    if (allocationPercentage < targetCoverage) {
       count++
     }
   }
@@ -138,11 +149,11 @@ onMounted(fetchData)
 <template>
   <div>
     <div v-if="isLoading">
-      <p class="heading">Under 100%</p>
+      <p class="heading">Under Target</p>
       <p class="title">Loading...</p>
     </div>
     <div v-else>
-      <p class="heading">Under 100%</p>
+      <p class="heading">Under Target</p>
       <p class="title" :class="{'has-text-warning': underallocatedCount > 0}">{{ underallocatedCount }}</p>
       <p class="is-size-7 has-text-grey">{{ currentMonthName }}</p>
     </div>
